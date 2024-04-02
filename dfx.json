@@ -1,0 +1,26 @@
+{
+  "canisters": {
+    "investafarm_canisters_backend": {
+      "candid": "src/investafarm_canisters_backend/investafarm_canisters_backend.did",
+      "package": "investafarm_canisters_backend",
+      "type": "rust"
+    },
+    "investafarm_canisters_frontend": {
+      "dependencies": [
+        "investafarm_canisters_backend"
+      ],
+      "source": [
+        "src/investafarm_canisters_frontend/assets"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "output_env_file": ".env",
+  "version": 1
+}
