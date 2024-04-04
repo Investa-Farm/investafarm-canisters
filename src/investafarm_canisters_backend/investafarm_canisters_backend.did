@@ -1,3 +1,17 @@
+type Error = variant {
+  FieldEmpty : record { msg : text };
+  PrincipalIdAlreadyRegistered : record { msg : text };
+  FarmNameTaken : record { msg : text };
+};
+type NewFarmer = record {
+  farmer_name : text;
+  farm_name : text;
+  farm_description : text;
+};
+type Result = variant { Ok : Success; Err : Error };
+type Success = variant { FarmCreatedSuccesfully : record { msg : text } };
 service : {
-    "greet": (text) -> (text) query;
+  checking_user_management : () -> (text) query;
+  greet : (text) -> (text);
+  register_your_farm : (NewFarmer) -> (Result);
 }
