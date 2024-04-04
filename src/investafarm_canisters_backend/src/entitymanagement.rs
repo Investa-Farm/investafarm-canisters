@@ -171,20 +171,6 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
 
    // Check if principal ID is already registered 
    let new_farmer_principal_id = ic_cdk::caller(); 
-//    let mut is_principal_id_registered = false;
-
-//    REGISTERED_FARMERS.with(|farmers| {
-//       for farmer in farmers.borrow().values() {
-//         if farmer.principal_id == new_farmer_principal_id {
-//             is_principal_id_registered = true;
-//             break;
-//         }
-//       }
-//    }); 
-
-//    if is_principal_id_registered {
-//     return Err(Error::PrincipalIdAlreadyRegistered { msg: format!("The principal id {} has already been registered!", new_farmer_principal_id) });
-//    }
 
     _is_principal_id_registered(new_farmer_principal_id)?;
 
@@ -283,7 +269,7 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
    let investor_clone1 = investor.clone();
    let investor_clone2 = investor.clone(); 
 
-   // Mapping farmer name
+   // Mapping investor name
    REGISTERED_INVESTORS.with(|investors| {
     investors.borrow_mut().insert(investor.name, investor_clone1)
    }); 
