@@ -1,6 +1,7 @@
 use candid::{CandidType, Principal, Encode, Decode}; 
 use ic_stable_structures::Storable;
 use serde::{Serialize, Deserialize}; 
+// use std::cell::Ref;
 use std::{borrow::Cow, cell::RefCell}; 
 use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap }; 
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager,VirtualMemory};
@@ -49,6 +50,31 @@ pub struct NewFarmer {
     farm_description: String
 }
 
+// Investor Struct 
+#[derive(CandidType, Serialize, Deserialize, Clone)] 
+pub struct Investor {
+    id: u64, 
+    name: String, 
+    verified: bool, 
+    principal_id: Principal
+}
+
+impl Default for Investor {
+   fn default() -> Self {
+       Self {
+        id: 0, 
+        name: String::new(), 
+        verified: false, 
+        principal_id: Principal::anonymous()
+       }
+   }    
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone)] 
+pub struct NewInvestor {
+    name: String
+}
+
 // Necessary as Internet Computer's architecture requires data to be serialized before it can be stored in stable memory or sent across canisters
 impl Storable for Farmer {
     fn to_bytes(&self) -> Cow<[u8]> {
@@ -60,7 +86,22 @@ impl Storable for Farmer {
     }    
 }
 
+impl Storable for Investor {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }     
+ 
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }       
+}
+
 impl BoundedStorable for Farmer {
+    const MAX_SIZE: u32 = 1024; 
+    const IS_FIXED_SIZE: bool = false;
+}
+
+impl BoundedStorable for Investor {
     const MAX_SIZE: u32 = 1024; 
     const IS_FIXED_SIZE: bool = false;
 }
@@ -75,11 +116,21 @@ thread_local! {
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 
+
+    static INVESTOR_STORAGE: RefCell<StableBTreeMap<u64, Investor, Memory>> = 
+    RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+    )); 
     
     static FARMER_ID: RefCell<u64> = RefCell::new(0);
+
+    static INVESTOR_ID: RefCell<u64> = RefCell::new(0);
     
     // Mapping farmers with their farm names: for ensuring there are no duplicate farm names
     static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
+
+    // Mapping Investors with their investor names
+    static REGISTERED_INVESTORS: RefCell<HashMap<String, Investor>> = RefCell::new(HashMap::new());
 }
 
 
@@ -87,6 +138,7 @@ thread_local! {
 #[derive(CandidType, Deserialize, Serialize)] 
 pub enum Success {
   FarmCreatedSuccesfully { msg: String }, 
+  InvestorRegisteredSuccesfully { msg: String }
 }
 
 // Error Messages 
@@ -98,7 +150,7 @@ pub enum Error {
 }
 
 
-// Fucntion for registering farm 
+// FUNCTION FOR REGISTERING FARM
 pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
    if new_farmer.farmer_name.is_empty() || new_farmer.farm_name.is_empty() || new_farmer.farm_description.is_empty() {
       return Err(Error::FieldEmpty { msg: format!("Kindly ensure all required fieilds are filled!") })
@@ -119,23 +171,25 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
 
    // Check if principal ID is already registered 
    let new_farmer_principal_id = ic_cdk::caller(); 
-   let mut is_principal_id_registered = false;
+//    let mut is_principal_id_registered = false;
 
-   REGISTERED_FARMERS.with(|farmers| {
-      for farmer in farmers.borrow().values() {
-        if farmer.principal_id == new_farmer_principal_id {
-            is_principal_id_registered = true;
-            break;
-        }
-      }
-   }); 
+//    REGISTERED_FARMERS.with(|farmers| {
+//       for farmer in farmers.borrow().values() {
+//         if farmer.principal_id == new_farmer_principal_id {
+//             is_principal_id_registered = true;
+//             break;
+//         }
+//       }
+//    }); 
 
-   if is_principal_id_registered {
-    return Err(Error::PrincipalIdAlreadyRegistered { msg: format!("The principal id {} has already been registered!", new_farmer_principal_id) });
-   }
+//    if is_principal_id_registered {
+//     return Err(Error::PrincipalIdAlreadyRegistered { msg: format!("The principal id {} has already been registered!", new_farmer_principal_id) });
+//    }
+
+    _is_principal_id_registered(new_farmer_principal_id)?;
 
 
-   let id = _increament_farmer_id(); 
+   let id = FARMER_ID.with(|id| _increament_id(id)); 
 
    let farmer =  Farmer {
        id, 
@@ -166,15 +220,78 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
    
 }
 
-fn _increament_farmer_id() -> u64 {
-    FARMER_ID.with(|id| {
-        let new_id = *id.borrow_mut() + 1;
-        *id.borrow_mut() = new_id;
-        new_id
-    })
+fn _increament_id(id: &RefCell<u64>) -> u64 {
+    let mut id_borrowed = id.borrow_mut();
+    let new_id = *id_borrowed + 1;
+    *id_borrowed = new_id;
+    new_id
 }
 
+fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Error> {
+    let mut is_principal_id_registered = false; 
 
-pub fn check_user_management() -> String {
-    format!("Checking user management! It works")
+    REGISTERED_FARMERS.with(|farmers| {
+        for farmer in farmers.borrow().values() {
+            if farmer.principal_id == new_principal_id {
+                is_principal_id_registered = true;
+                break;
+            }
+        }
+    }); 
+
+    REGISTERED_INVESTORS.with(|investors| {
+        for investor in investors.borrow().values() {
+            if investor.principal_id == new_principal_id {
+                is_principal_id_registered = true; 
+                break; 
+            }
+        }
+    }); 
+
+    if is_principal_id_registered {
+        return Err(Error::PrincipalIdAlreadyRegistered { msg: format!("The principal id {} has already been registered!", new_principal_id) });
+    }
+
+    Ok(())
+}
+
+// FUNCTION FOR REGISTERING INVESTOR
+pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
+
+    if new_investor.name.is_empty() {
+        return Err(Error::FieldEmpty { msg: format!("Kindly fill in your name!") });
+    }
+
+    // Checking whether the principal ID is already registered 
+    let new_investor_principal_id = ic_cdk::caller(); 
+
+    let result = _is_principal_id_registered(new_investor_principal_id); 
+    if let Err(e) = result {
+        return Err(e); 
+    }
+
+    // Increamenting the ID 
+    let id = INVESTOR_ID.with(|id| _increament_id(id)); 
+
+    let investor = Investor {
+        id, 
+        principal_id: new_investor_principal_id, 
+        name: new_investor.name, 
+        verified: false
+    }; 
+
+   let investor_clone1 = investor.clone();
+   let investor_clone2 = investor.clone(); 
+
+   // Mapping farmer name
+   REGISTERED_INVESTORS.with(|investors| {
+    investors.borrow_mut().insert(investor.name, investor_clone1)
+   }); 
+
+   INVESTOR_STORAGE.with(|investors| {
+      investors.borrow_mut().insert(id, investor_clone2)
+   }); 
+
+   Ok(Success::InvestorRegisteredSuccesfully { msg: format!("Investor has been registered succesfully") })
+
 }

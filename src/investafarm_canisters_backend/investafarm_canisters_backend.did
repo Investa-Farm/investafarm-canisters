@@ -8,10 +8,13 @@ type NewFarmer = record {
   farm_name : text;
   farm_description : text;
 };
+type NewInvestor = record { name : text };
 type Result = variant { Ok : Success; Err : Error };
-type Success = variant { FarmCreatedSuccesfully : record { msg : text } };
+type Success = variant {
+  InvestorRegisteredSuccesfully : record { msg : text };
+  FarmCreatedSuccesfully : record { msg : text };
+};
 service : {
-  checking_user_management : () -> (text) query;
-  greet : (text) -> (text);
+  register_investor : (NewInvestor) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
 }
