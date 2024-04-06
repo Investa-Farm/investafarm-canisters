@@ -1,5 +1,5 @@
 [package]
-name = "investafarm_canisters_backend"
+name = "canister_one"
 version = "0.1.0"
 edition = "2021"
 

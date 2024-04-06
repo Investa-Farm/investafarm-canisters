@@ -281,3 +281,5 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
    Ok(Success::InvestorRegisteredSuccesfully { msg: format!("Investor has been registered succesfully") })
 
 }
+
+// FUNCTION FOR REGISTERING SUPPLY AGRI BUSINESS 
