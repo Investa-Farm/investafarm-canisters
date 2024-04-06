@@ -1,8 +1,18 @@
 {
   "canisters": {
-    "investafarm_canisters_backend": {
-      "candid": "src/investafarm_canisters_backend/investafarm_canisters_backend.did",
-      "package": "investafarm_canisters_backend",
+    "canister_one": {
+      "candid": "src/canister_one/canister_one.did",
+      "package": "canister_one",
+      "type": "rust"
+    }, 
+    "canister_two": {
+      "candid": "src/canister_two/canister_two.did",
+      "package": "canister_two",
+      "type": "rust"
+    }, 
+    "canister_three": {
+      "candid": "src/canister_three/canister_three.did",
+      "package": "canister_three",
       "type": "rust"
     } 
   },

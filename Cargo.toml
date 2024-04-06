@@ -1,5 +1,7 @@
 [workspace]
 members = [
-    "src/investafarm_canisters_backend"
+    "src/canister_one", 
+    "src/canister_two", 
+    "src/canister_three"
 ]
 resolver = "2"
