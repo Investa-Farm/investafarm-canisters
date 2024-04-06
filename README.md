@@ -27,7 +27,43 @@ The architecture is divided into different sections:
 2. Canister two: responsible for approval of the different entities that have registered
 3. Canister three: this will be the payments smart contract
 
-### 1. Canister One: 
+### 1. Canister One: ``src/canister_one``
 It contains the following logic:
 1. Entity Management: Registration, Updating and Deletion of the different entities in the system (i.e farms, Investors, Farms Agri Business, Supply Agri Business). The logic for this is located in the ``src/entitymanagement.rs`` 
 2. Ordering of items from supply agri business: Farmers will be able to order the different items that are being sold by the different supply agri businesses that have registered in the system. 
+
+### 2. Canister Two: ``src/canister_two``
+Responsible for approval of the different entities that have registered once they go through the KYC 
+
+### 3. Canister Three: ``src/canister_three``
+Responsible for payments 
+
+## Running the code: 
+1. Step 1: Starting the local replica: 
+```
+dfx start --clean --background
+```
+
+2. Step 2: Generating the candid file: 
+```
+For canister 1: 
+./canister_one_did.sh && dfx generate canister_one
+
+For canister 2:
+./canister_two_did.sh && dfx generate canister_two
+
+For canister 3:
+./canister_three_did.sh && dfx generate canister_three
+```
+
+3. Step 3: Deploying the canister locally 
+```
+For canister 1: 
+dfx deploy canister_one 
+
+For canister 2: 
+dfx deploy canister_two 
+
+For canister 3: 
+dfx deploy canister_three
+```
