@@ -20,4 +20,10 @@ fn register_supply_agribusiness(new_supply_agribusiness: entitymanagement::NewSu
     entitymanagement::register_supply_agribusiness(new_supply_agribusiness)
 }
 
+// REGISTER FARMS AGRI BUSINESS 
+#[update] 
+fn register_farms_agribusiness(new_farms_agribusiness: entitymanagement::NewFarmsAgriBusiness) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    entitymanagement::register_farms_agribusiness(new_farms_agribusiness)
+}
+
 ic_cdk::export_candid!(); 
