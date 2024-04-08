@@ -75,6 +75,45 @@ pub struct NewInvestor {
     name: String
 }
 
+// Supply Agri Business Struct 
+#[derive(CandidType, Serialize, Deserialize, Clone)] 
+pub struct SupplyAgriBusiness {
+    id: u64, 
+    agribusiness_name: String, 
+    items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, 
+    // supplied_items: SuppliedItems, 
+    verified: bool, 
+    principal_id: Principal    
+} 
+
+impl Default for SupplyAgriBusiness {
+    fn default() -> Self {
+        Self {
+         id: 0, 
+         agribusiness_name: String::new(), 
+         items_to_be_supplied: None, 
+         //supplied_items: SuppliedItems, 
+         verified: false, 
+         principal_id: Principal::anonymous()
+        }
+    }    
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone)] 
+pub struct NewSupplyAgriBusiness {
+    agribusiness_name: String, 
+    items_to_be_supplied: Option<AgribusinessItemsToBeSupplied> 
+}
+
+type AgribusinessItemsToBeSupplied = HashMap<String, u64>; 
+
+#[derive(CandidType, Serialize, Deserialize, Clone)] 
+pub struct SuppliedItems {
+   principal_id: Principal, 
+   item_name: String, 
+   amount: u64
+}
+
 // Necessary as Internet Computer's architecture requires data to be serialized before it can be stored in stable memory or sent across canisters
 impl Storable for Farmer {
     fn to_bytes(&self) -> Cow<[u8]> {
@@ -96,6 +135,16 @@ impl Storable for Investor {
     }       
 }
 
+impl Storable for SupplyAgriBusiness {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }     
+ 
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }       
+}
+
 impl BoundedStorable for Farmer {
     const MAX_SIZE: u32 = 1024; 
     const IS_FIXED_SIZE: bool = false;
@@ -105,6 +154,12 @@ impl BoundedStorable for Investor {
     const MAX_SIZE: u32 = 1024; 
     const IS_FIXED_SIZE: bool = false;
 }
+
+impl BoundedStorable for SupplyAgriBusiness {
+    const MAX_SIZE: u32 = 1024; 
+    const IS_FIXED_SIZE: bool = false;
+}
+
 
 // Thread Local will allow us to achieve interior mutability, a design pattern in Rust that allows you to mutate data even when there are immutable references to that data
 thread_local! {
@@ -121,16 +176,26 @@ thread_local! {
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 
+
+    static SUPPLY_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, SupplyAgriBusiness, Memory>> = 
+    RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+    )); 
     
     static FARMER_ID: RefCell<u64> = RefCell::new(0);
 
     static INVESTOR_ID: RefCell<u64> = RefCell::new(0);
+
+    static SUPPLY_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(0);
     
     // Mapping farmers with their farm names: for ensuring there are no duplicate farm names
     static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
 
     // Mapping Investors with their investor names
     static REGISTERED_INVESTORS: RefCell<HashMap<String, Investor>> = RefCell::new(HashMap::new());
+
+    // Mapping supply agri business with their names
+    static REGISTERED_SUPPLY_AGRIBUSINESS: RefCell<HashMap<String, SupplyAgriBusiness>> = RefCell::new(HashMap::new());
 }
 
 
@@ -138,7 +203,8 @@ thread_local! {
 #[derive(CandidType, Deserialize, Serialize)] 
 pub enum Success {
   FarmCreatedSuccesfully { msg: String }, 
-  InvestorRegisteredSuccesfully { msg: String }
+  InvestorRegisteredSuccesfully { msg: String }, 
+  SupplyAgriBizRegisteredSuccesfully { msg: String }
 }
 
 // Error Messages 
@@ -234,6 +300,15 @@ fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Error>
         }
     }); 
 
+    REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().values() {
+            if agribiz.principal_id == new_principal_id {
+                is_principal_id_registered = true; 
+                break; 
+            }
+        }
+    }); 
+
     if is_principal_id_registered {
         return Err(Error::PrincipalIdAlreadyRegistered { msg: format!("The principal id {} has already been registered!", new_principal_id) });
     }
@@ -283,3 +358,42 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
 }
 
 // FUNCTION FOR REGISTERING SUPPLY AGRI BUSINESS 
+pub fn register_supply_agribusiness(new_supply_agribusiness: NewSupplyAgriBusiness) -> Result<Success, Error> {
+    if new_supply_agribusiness.agribusiness_name.is_empty() {
+        return Err(Error::FieldEmpty { msg: format!("Kindly fill in supply agri business name!") }); 
+    } 
+
+    // Check whether principal ID is already registered 
+    let new_supply_agribusiness_principal_id = ic_cdk::caller(); 
+
+    let result = _is_principal_id_registered(new_supply_agribusiness_principal_id); 
+    if let Err(e) = result {
+        return Err(e); 
+    }
+
+    // Increamenting the ID 
+    let id = SUPPLY_AGRIBUSINESS_ID.with(|id| _increament_id(id)); 
+
+    let supply_agri_business = SupplyAgriBusiness {
+        id: 0, 
+        agribusiness_name: new_supply_agribusiness.agribusiness_name, 
+        items_to_be_supplied: new_supply_agribusiness.items_to_be_supplied, 
+        //supplied_items: SuppliedItems, 
+        verified: false, 
+        principal_id: new_supply_agribusiness_principal_id
+    }; 
+
+    let supply_agri_business_clone1 = supply_agri_business.clone(); 
+    let supply_agri_business_clone2 = supply_agri_business.clone(); 
+
+    // Mapping the agri business name 
+    REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow_mut().insert(supply_agri_business.agribusiness_name, supply_agri_business_clone1)
+    }); 
+
+    SUPPLY_AGRIBUSINESS_STORAGE.with(|supplyagribusiness| {
+        supplyagribusiness.borrow_mut().insert(id, supply_agri_business_clone2)
+    }); 
+
+    Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("Supply Agri Business has been registered succesfully") })
+}

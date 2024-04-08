@@ -9,12 +9,18 @@ type NewFarmer = record {
   farm_description : text;
 };
 type NewInvestor = record { name : text };
+type NewSupplyAgriBusiness = record {
+  agribusiness_name : text;
+  items_to_be_supplied : opt vec record { text; nat64 };
+};
 type Result = variant { Ok : Success; Err : Error };
 type Success = variant {
+  SupplyAgriBizRegisteredSuccesfully : record { msg : text };
   InvestorRegisteredSuccesfully : record { msg : text };
   FarmCreatedSuccesfully : record { msg : text };
 };
 service : {
   register_investor : (NewInvestor) -> (Result);
+  register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
 }
