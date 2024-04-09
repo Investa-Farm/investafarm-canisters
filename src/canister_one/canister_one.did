@@ -15,6 +15,12 @@ type Farmer = record {
   investors_ids : principal;
   farm_description : text;
 };
+type Investor = record {
+  id : nat64;
+  verified : bool;
+  name : text;
+  principal_id : principal;
+};
 type NewFarmer = record {
   farmer_name : text;
   farm_name : text;
@@ -38,6 +44,8 @@ type Success = variant {
   FarmCreatedSuccesfully : record { msg : text };
 };
 service : {
+  display_farms : () -> (vec Farmer) query;
+  display_investors : () -> (vec Investor) query;
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);

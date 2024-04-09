@@ -1,4 +1,4 @@
-use ic_cdk::update; 
+use ic_cdk::{query, update}; 
 
 mod entitymanagement;
 
@@ -24,6 +24,18 @@ fn register_supply_agribusiness(new_supply_agribusiness: entitymanagement::NewSu
 #[update] 
 fn register_farms_agribusiness(new_farms_agribusiness: entitymanagement::NewFarmsAgriBusiness) -> Result<entitymanagement::Success, entitymanagement::Error> {
     entitymanagement::register_farms_agribusiness(new_farms_agribusiness)
+}
+
+// DISPLAY FARMS THAT HAVE REGISTERED 
+#[query]
+fn display_farms() -> Vec<entitymanagement::Farmer> {
+    entitymanagement::return_farmers()
+}
+
+// DISPLAY INVESTORS THAT HAVE REGISTERED 
+#[query]
+fn display_investors() -> Vec<entitymanagement::Investor> {
+    entitymanagement::return_investors()
 }
 
 ic_cdk::export_candid!(); 
