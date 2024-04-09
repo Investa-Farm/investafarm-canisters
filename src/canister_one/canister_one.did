@@ -15,6 +15,14 @@ type Farmer = record {
   investors_ids : principal;
   farm_description : text;
 };
+type FarmsAgriBusiness = record {
+  id : nat64;
+  verified : bool;
+  agribusiness_name : text;
+  principal_id : principal;
+  total_farmers : nat64;
+  farms : opt vec record { Farmer; nat64 };
+};
 type Investor = record {
   id : nat64;
   verified : bool;
@@ -52,6 +60,7 @@ type SupplyAgriBusiness = record {
 };
 service : {
   display_farms : () -> (vec Farmer) query;
+  display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
   display_investors : () -> (vec Investor) query;
   display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
