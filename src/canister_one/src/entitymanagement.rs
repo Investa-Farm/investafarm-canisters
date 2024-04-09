@@ -505,5 +505,10 @@ pub fn return_farmers() -> Vec<Farmer> {
 
 // DISPLAYING INVESTORS 
 pub fn return_investors() -> Vec<Investor> {
-    INVESTOR_STORAGE.with(|investor| investor.borrow().iter().map(|(_, item)| item.clone()).collect())
+    INVESTOR_STORAGE.with(|farmer| farmer.borrow().iter().map(|(_, item)| item.clone()).collect())
+}
+
+// DISPLAYING AGRI BUSINESSES 
+pub fn return_supply_agribusiness() -> Vec<SupplyAgriBusiness> {
+    SUPPLY_AGRIBUSINESS_STORAGE.with(|agribusiness| agribusiness.borrow().iter().map(|(_, item)| item.clone()).collect())
 }

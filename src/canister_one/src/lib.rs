@@ -38,4 +38,10 @@ fn display_investors() -> Vec<entitymanagement::Investor> {
     entitymanagement::return_investors()
 }
 
+// DISPLAY SUPPLY AGRI BUZ THAT HAVE REGISTERED 
+#[query] 
+fn display_supply_agribusinesses() -> Vec<entitymanagement::SupplyAgriBusiness> {
+    entitymanagement::return_supply_agribusiness()
+}
+
 ic_cdk::export_candid!(); 

@@ -43,9 +43,17 @@ type Success = variant {
   InvestorRegisteredSuccesfully : record { msg : text };
   FarmCreatedSuccesfully : record { msg : text };
 };
+type SupplyAgriBusiness = record {
+  id : nat64;
+  verified : bool;
+  agribusiness_name : text;
+  items_to_be_supplied : opt vec record { text; nat64 };
+  principal_id : principal;
+};
 service : {
   display_farms : () -> (vec Farmer) query;
   display_investors : () -> (vec Investor) query;
+  display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
