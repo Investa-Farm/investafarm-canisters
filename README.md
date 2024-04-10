@@ -67,3 +67,36 @@ dfx deploy canister_two
 For canister 3: 
 dfx deploy canister_three
 ```
+
+## Task 1: Gerald 
+Your task will be completing the ordering items from supply agri business logic 
+
+This is the current user flow for the ``supply agri business`` entity: 
+```
+register via register_supply_agribusiness() function -> agri business gets approved in the 2nd canister (not yet implemented) -> farmers can now order items from the supply agri businesses 
+``` 
+
+Your task will be completing the ``ordering items from the supply agri business`` logic
+
+When a supply agri business registers, they have the option of filling in the different items they have during registration or they can just fill them later once they've logged into the site (The option of filling it later hasn't been implented yet)
+
+![alt text](images/image-1.png)
+
+For the item section, they'll be filling in the ``item name`` and the ``item price`` 
+
+The logic of the code will be at the ``canister_one/src/supplymanagement.rs`` directory  
+
+You'll switch to the ``supply-management`` branch in order to start writing the code logic
+
+This is a summary of the ``farmer user flow``: 
+```
+1. farmer registers in the platform -> 2. farmer gets verified once KYC is done (not implemented) -> 3. farmer asks for a loan (not implemented yet) -> 4. once loan is received farmer starts requesting for items from the supply agri business
+```
+
+Ideally we'll just skip to step 4 as we work on logic of step 2 and 3 
+
+Here's a summary of the ``items to be supplied flow``: 
+```
+1. Farmer selects the item they'd like to receive from the supply agri business -> 2. Item gets gets marked as pending until the supply agri business confirms it -> 3. Once the item is confirmed, it triggers a function in the payments smart contract that's supposed to transfer the funds from the farmer to the supply agri business (this hasn't been implemented yet, so you'll just skip) -> 4. Item now gets marked as comlpeted and its quantity reduced from the supply agri business and moved to the farmer 
+``` 
+

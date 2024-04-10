@@ -262,7 +262,11 @@ pub enum Success {
   FarmCreatedSuccesfully { msg: String }, 
   InvestorRegisteredSuccesfully { msg: String }, 
   SupplyAgriBizRegisteredSuccesfully { msg: String },
-  FarmsAgriBizRegisteredSuccesfully { msg: String }
+  FarmsAgriBizRegisteredSuccesfully { msg: String }, 
+  FarmerLogInSuccesfull { msg: String }, 
+  InvestorLogInSuccesfull { msg: String }, 
+  SupplyAgriBusinessLogInSuccesfull { msg: String }, 
+  FarmsAgriBusinessLogInSuccesfull { msg: String }
 }
 
 // Error Messages 
@@ -270,7 +274,8 @@ pub enum Success {
 pub enum Error {
     FieldEmpty { msg: String }, 
     FarmNameTaken { msg: String }, 
-    PrincipalIdAlreadyRegistered { msg: String }
+    PrincipalIdAlreadyRegistered { msg: String }, 
+    YouAreNotRegistered { msg: String }
 }
 
 
@@ -517,3 +522,38 @@ pub fn return_supply_agribusiness() -> Vec<SupplyAgriBusiness> {
 pub fn return_farms_agribusiness() -> Vec<FarmsAgriBusiness> {
     FARMS_AGRIBUSINESS_STORAGE.with(|agribusiness| agribusiness.borrow().iter().map(|(_, item)| item.clone()).collect())
 }
+
+// FUNCTION FOR LOGGIN INTO THE SITE
+// pub fn log_in() -> Result<Success, Error> {
+//     let principal_id = ic_cdk::caller(); 
+
+//     let result = REGISTERED_FARMERS.with(|farmers| {
+//         for farmer in farmers.borrow().values() {
+//             if farmer.principal_id == principal_id {
+//                 return Ok(Success::FarmerLogInSuccesfull { msg: format!("You've logged in as a farmer succesfully") });
+//             }
+//         }
+//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
+//     }); 
+
+//     let result = REGISTERED_INVESTORS.with(|investors| {
+//         for investor in investors.borrow().values() {
+//             if investor.principal_id == principal_id {
+//                 return Ok(Success::InvestorLogInSuccesfull { msg: format!("You've logged in as an Investor succesfully") });
+//             }
+//         }
+//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
+//     }); 
+
+//     let result = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+//         for agribiz in agribusiness.borrow().values() {
+//             if agribusiness.principal_id == principal_id {
+//                 return Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("You've logged in as an Investor succesfully") });
+//             }
+//         }
+//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
+//     }); 
+
+//     result
+    
+// }

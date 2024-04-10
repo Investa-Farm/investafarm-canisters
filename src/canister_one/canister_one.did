@@ -1,5 +1,6 @@
 type Error = variant {
   FieldEmpty : record { msg : text };
+  YouAreNotRegistered : record { msg : text };
   PrincipalIdAlreadyRegistered : record { msg : text };
   FarmNameTaken : record { msg : text };
 };
@@ -46,10 +47,14 @@ type NewSupplyAgriBusiness = record {
 };
 type Result = variant { Ok : Success; Err : Error };
 type Success = variant {
+  FarmsAgriBusinessLogInSuccesfull : record { msg : text };
+  SupplyAgriBusinessLogInSuccesfull : record { msg : text };
   FarmsAgriBizRegisteredSuccesfully : record { msg : text };
   SupplyAgriBizRegisteredSuccesfully : record { msg : text };
+  FarmerLogInSuccesfull : record { msg : text };
   InvestorRegisteredSuccesfully : record { msg : text };
   FarmCreatedSuccesfully : record { msg : text };
+  InvestorLogInSuccesfull : record { msg : text };
 };
 type SupplyAgriBusiness = record {
   id : nat64;
