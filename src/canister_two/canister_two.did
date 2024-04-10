@@ -1,3 +1,19 @@
 type Error = variant { AnErrorOccured : record { msg : text } };
-type Result = variant { Ok : text; Err : Error };
-service : { call_testing_inter_canister : () -> (Result) }
+type Farmer = record {
+  id : nat64;
+  agri_business : opt text;
+  verified : bool;
+  amount_invested : nat64;
+  farmer_name : text;
+  insured : bool;
+  principal_id : principal;
+  farm_name : text;
+  investors_ids : principal;
+  farm_description : text;
+};
+type Result = variant { Ok : vec Farmer; Err : Error };
+type Result_1 = variant { Ok : text; Err : Error };
+service : {
+  call_get_farmers : () -> (Result);
+  call_testing_inter_canister : () -> (Result_1);
+}
