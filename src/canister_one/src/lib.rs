@@ -50,4 +50,9 @@ fn display_farms_agribusinesses() -> Vec<entitymanagement::FarmsAgriBusiness> {
     entitymanagement::return_farms_agribusiness()
 }
 
+#[update]
+pub fn testing_inter_canister() -> String {
+    return "Inter canister works!".to_string()
+}
+
 ic_cdk::export_candid!(); 

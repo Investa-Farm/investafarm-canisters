@@ -21,6 +21,8 @@ You can check out the following guides on how to set up your environment and ins
 ## Canister Architecture: 
 A detailed explanation of the canister's architecture can be found over [here](https://docs.google.com/document/d/1EGoq2N2qiWPbeFbTOVr1LSLiaspwg4ROMYodqY8TkfU/edit?usp=sharing)
 
+A detailed explanation of the user flow can be found ove [here](https://docs.google.com/document/d/115tZG5oz6jwoKw-9cYmaolUvrzHONh1ILVRjYcSQYx8/edit?usp=sharing)
+
 The architecture is divided into different sections: 
 
 1. Canister one: responsible for entity management and ordering of items from supply agri business 
@@ -99,4 +101,14 @@ Here's a summary of the ``items to be supplied flow``:
 ```
 1. Farmer selects the item they'd like to receive from the supply agri business -> 2. Item gets gets marked as pending until the supply agri business confirms it -> 3. Once the item is confirmed, it triggers a function in the payments smart contract that's supposed to transfer the funds from the farmer to the supply agri business (this hasn't been implemented yet, so you'll just skip) -> 4. Item now gets marked as comlpeted and its quantity reduced from the supply agri business and moved to the farmer 
 ``` 
+
+Deadline: Tuesday April 17th 
+
+## Task 2: Steve 
+1. Complete login function: complete login function that checks whether someone has registered before logging into the site 
+
+2. Complete farmer user flow: 
+```
+1. Farmer registers -> 2. Farmer gets verified via the admin panel -> 3. Farmer asks for a certain amount of loan -> 4. Farmer receives loan amount from Investor -> 5. Farmer selects Items they'd like to receive from the supply agri business -> 6. Once the farmer repays a loan they can ask for a new loan 
+```
 

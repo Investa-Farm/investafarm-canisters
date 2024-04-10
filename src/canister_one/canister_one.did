@@ -72,4 +72,5 @@ service : {
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
+  testing_inter_canister : () -> (text);
 }
