@@ -52,9 +52,9 @@ pub struct NewFarmer {
 // Investor Struct 
 #[derive(CandidType, Serialize, Deserialize, Clone)] 
 pub struct Investor {
-    id: u64, 
+    pub id: u64, 
     name: String, 
-    verified: bool, 
+    pub verified: bool, 
     principal_id: Principal
 }
 
@@ -219,7 +219,7 @@ thread_local! {
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 
 
-    static INVESTOR_STORAGE: RefCell<StableBTreeMap<u64, Investor, Memory>> = 
+    pub static INVESTOR_STORAGE: RefCell<StableBTreeMap<u64, Investor, Memory>> = 
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 
