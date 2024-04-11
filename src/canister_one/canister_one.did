@@ -46,6 +46,7 @@ type NewSupplyAgriBusiness = record {
   items_to_be_supplied : opt vec record { text; nat64 };
 };
 type Result = variant { Ok : Success; Err : Error };
+type Result_1 = variant { Ok; Err : Error };
 type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   SupplyAgriBusinessLogInSuccesfull : record { msg : text };
@@ -72,5 +73,5 @@ service : {
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
-  testing_inter_canister : () -> (text);
+  verify_farmer : (nat64, bool) -> (Result_1);
 }

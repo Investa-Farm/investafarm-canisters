@@ -13,14 +13,14 @@ type Memory = VirtualMemory<DefaultMemoryImpl>;
 // Farmer Struct 
 #[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Farmer {
-  id: u64, 
+  pub id: u64, 
   principal_id: Principal, 
   farmer_name: String, 
   farm_name: String, 
   farm_description: String, 
   amount_invested: u64, 
   investors_ids: Principal, 
-  verified: bool, 
+  pub verified: bool, 
   agri_business: Option<String>, 
   insured: bool
 }
@@ -214,7 +214,7 @@ thread_local! {
         MemoryManager::init(DefaultMemoryImpl::default())
     ); 
 
-    static FARMER_STORAGE: RefCell<StableBTreeMap<u64, Farmer, Memory>> = 
+    pub static FARMER_STORAGE: RefCell<StableBTreeMap<u64, Farmer, Memory>> = 
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 

@@ -1,6 +1,8 @@
 use ic_cdk::{query, update}; 
+use crate::entitymanagement::Error; 
 
 mod entitymanagement;
+mod adminapproval;
 
 // REGISTER FARMS 
 #[update]
@@ -50,9 +52,11 @@ fn display_farms_agribusinesses() -> Vec<entitymanagement::FarmsAgriBusiness> {
     entitymanagement::return_farms_agribusiness()
 }
 
-#[update]
-pub fn testing_inter_canister() -> String {
-    return "Inter canister works!".to_string()
-}
+// #[update]
+// pub fn testing_inter_canister() -> String {
+//     return "Inter canister works!".to_string()
+// }
+
+// ----------------------- ADMIN PANEL FUNCTIONS ---------------------------------------------------------- // 
 
 ic_cdk::export_candid!(); 
