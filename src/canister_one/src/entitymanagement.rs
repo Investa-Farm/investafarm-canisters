@@ -77,11 +77,11 @@ pub struct NewInvestor {
 // Supply Agri Business Struct 
 #[derive(CandidType, Serialize, Deserialize, Clone)] 
 pub struct SupplyAgriBusiness {
-    id: u64, 
+    pub id: u64, 
     agribusiness_name: String, 
     items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, 
     // supplied_items: SuppliedItems, 
-    verified: bool, 
+    pub verified: bool, 
     principal_id: Principal    
 } 
 
@@ -116,11 +116,11 @@ pub struct SuppliedItems {
 // Farms Agri Business Struct 
 #[derive(CandidType, Serialize, Deserialize, Clone)]  
 pub struct FarmsAgriBusiness {
-    id: u64, 
+    pub id: u64, 
     agribusiness_name: String, 
     total_farmers: u64, 
     principal_id: Principal, 
-    verified: bool, 
+    pub verified: bool, 
     farms: Option<FarmsForAgriBusiness>
 }
 
@@ -224,12 +224,12 @@ thread_local! {
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 
 
-    static SUPPLY_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, SupplyAgriBusiness, Memory>> = 
+    pub static SUPPLY_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, SupplyAgriBusiness, Memory>> = 
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 
 
-    static FARMS_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, FarmsAgriBusiness, Memory>> = 
+    pub static FARMS_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, FarmsAgriBusiness, Memory>> = 
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 

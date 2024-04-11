@@ -74,5 +74,7 @@ service : {
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
   verify_farmer : (nat64, bool) -> (Result_1);
+  verify_farms_agribusiness : (nat64, bool) -> (Result_1);
   verify_investor : (nat64, bool) -> (Result_1);
+  verify_supply_agribusiness : (nat64, bool) -> (Result_1);
 }

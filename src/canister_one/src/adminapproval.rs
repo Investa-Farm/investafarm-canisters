@@ -8,7 +8,9 @@ use crate::entitymanagement;
 pub enum Error {
     FarmerNotFound { msg: String }, 
     PermissionDenied { msg: String }, 
-    InvestorNotFound { msg: String }
+    InvestorNotFound { msg: String }, 
+    SupplyAgriBizNotFound { msg: String }, 
+    FarmsAgriBizNotFound { msg: String }
 }
 
 #[update]
@@ -38,7 +40,7 @@ pub fn verify_farmer(id: u64, verified: bool) -> Result<(), Error> {
 
 #[update] 
 pub fn verify_investor(id: u64, verified: bool) -> Result<(), Error> {
-    // Insert functionality for checking only the specific principal IDs have registered 
+    // Insert functionality for checking only the specific principal IDs 
 
     let mut investors = entitymanagement::return_investors(); 
 
@@ -52,5 +54,37 @@ pub fn verify_investor(id: u64, verified: bool) -> Result<(), Error> {
     }
 }
 
-// #[update]
-// pub fn 
+
+// Debug this as it replicates a similar supply agri business when someone verifies it 
+#[update]
+pub fn verify_supply_agribusiness(id: u64, verified: bool) -> Result<(), Error> {
+    // Insert functionality for checking only the specific principal IDs 
+     
+    let mut supply_agribusinesses = entitymanagement::return_supply_agribusiness(); 
+
+    if let Some(agribiz) = supply_agribusinesses.iter_mut().find(|s| s.id == id) {
+        agribiz.verified = verified; 
+
+        entitymanagement::SUPPLY_AGRIBUSINESS_STORAGE.with(|service| service.borrow_mut().insert(id, agribiz.clone())); 
+        Ok(())
+    } else {
+        Err(Error::SupplyAgriBizNotFound { msg: format!("Supply agri business with id {} doesn't exist", id) })
+    }
+} 
+
+// Debug this as it replicates a similar supply agri business when someone verifies it  
+#[update] 
+pub fn verify_farms_agribusiness(id: u64, verified: bool) -> Result<(), Error> {
+    // Insert functionality for checking only the specific principal IDs 
+
+    let mut farms_agribusinesses = entitymanagement::return_farms_agribusiness(); 
+
+    if let Some(agribiz) = farms_agribusinesses.iter_mut().find(|s| s.id == id) {
+        agribiz.verified = verified; 
+
+        entitymanagement::FARMS_AGRIBUSINESS_STORAGE.with(|service| service.borrow_mut().insert(id, agribiz.clone())); 
+        Ok(())
+    } else {
+        Err(Error::FarmsAgriBizNotFound { msg: format!("Farmer agri business with id {} doesn't exist", id) })
+    }
+}
