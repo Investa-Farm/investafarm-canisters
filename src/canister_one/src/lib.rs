@@ -1,8 +1,11 @@
 use ic_cdk::{query, update}; 
 use crate::entitymanagement::Error; 
+use ic_ledger_types::BlockIndex; 
+use crate::payments::TransferArgs;
 
 mod entitymanagement;
 mod adminapproval;
+mod payments; 
 
 // REGISTER FARMS 
 #[update]
@@ -52,11 +55,8 @@ fn display_farms_agribusinesses() -> Vec<entitymanagement::FarmsAgriBusiness> {
     entitymanagement::return_farms_agribusiness()
 }
 
-// #[update]
-// pub fn testing_inter_canister() -> String {
-//     return "Inter canister works!".to_string()
+// fn display_test_ledger() -> Result<String, payments::Error> {
+//     payments::test_ledger()
 // }
-
-// ----------------------- ADMIN PANEL FUNCTIONS ---------------------------------------------------------- // 
 
 ic_cdk::export_candid!(); 
