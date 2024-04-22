@@ -2,10 +2,17 @@ use ic_cdk::{query, update};
 use crate::entitymanagement::Error; 
 use ic_ledger_types::BlockIndex; 
 use crate::payments::TransferArgs;
+use candid::Principal; 
 
 mod entitymanagement;
 mod adminapproval;
 mod payments; 
+
+// Frontend Intergration Testing 
+#[query]
+fn test_frontend() -> String {
+    return "Investa Farm Canisters!".to_string()
+}
 
 // REGISTER FARMS 
 #[update]

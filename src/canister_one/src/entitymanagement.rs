@@ -1,4 +1,5 @@
 use candid::{CandidType, Principal, Encode, Decode}; 
+use ic_cdk::update;
 use ic_stable_structures::Storable;
 use serde::{Serialize, Deserialize}; 
 // use std::cell::Ref;
@@ -276,6 +277,13 @@ pub enum Error {
     FarmNameTaken { msg: String }, 
     PrincipalIdAlreadyRegistered { msg: String }, 
     YouAreNotRegistered { msg: String }
+}
+
+// Login function 
+#[update] 
+pub fn who_am_i() -> Principal {
+    let caller = ic_cdk::caller(); 
+    return caller; 
 }
 
 
