@@ -1,5 +1,5 @@
 use candid::{CandidType, Principal, Encode, Decode}; 
-use ic_cdk::update;
+use ic_cdk::{query, update};
 use ic_stable_structures::Storable;
 use serde::{Serialize, Deserialize}; 
 // use std::cell::Ref;
@@ -47,7 +47,7 @@ impl Default for Farmer {
 pub struct NewFarmer {
     farmer_name: String, 
     farm_name: String, 
-    farm_description: String
+    farm_description: String 
 }
 
 // Investor Struct 
@@ -285,7 +285,6 @@ pub fn who_am_i() -> Principal {
     let caller = ic_cdk::caller(); 
     return caller; 
 }
-
 
 // FUNCTION FOR REGISTERING FARM
 pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
@@ -532,36 +531,44 @@ pub fn return_farms_agribusiness() -> Vec<FarmsAgriBusiness> {
 }
 
 // FUNCTION FOR LOGGIN INTO THE SITE
-// pub fn log_in() -> Result<Success, Error> {
-//     let principal_id = ic_cdk::caller(); 
+#[query]
+pub fn log_in() -> Result<Success, Error> {
+    let principal_id = ic_cdk::caller(); 
 
-//     let result = REGISTERED_FARMERS.with(|farmers| {
-//         for farmer in farmers.borrow().values() {
-//             if farmer.principal_id == principal_id {
-//                 return Ok(Success::FarmerLogInSuccesfull { msg: format!("You've logged in as a farmer succesfully") });
-//             }
-//         }
-//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
-//     }); 
+    let result = REGISTERED_FARMERS.with(|farmers| {
+        for farmer in farmers.borrow().values() {
+            if farmer.principal_id == principal_id {
+                return Ok(Success::FarmerLogInSuccesfull { msg: format!("You've logged in as a farmer succesfully") });
+            }
+        }
+        Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
+    }); 
 
-//     let result = REGISTERED_INVESTORS.with(|investors| {
-//         for investor in investors.borrow().values() {
-//             if investor.principal_id == principal_id {
-//                 return Ok(Success::InvestorLogInSuccesfull { msg: format!("You've logged in as an Investor succesfully") });
-//             }
-//         }
-//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
-//     }); 
+    if let Ok(res) = result {
+        return Ok(res);
+    }
 
-//     let result = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
-//         for agribiz in agribusiness.borrow().values() {
-//             if agribusiness.principal_id == principal_id {
-//                 return Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("You've logged in as an Investor succesfully") });
-//             }
-//         }
-//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
-//     }); 
+    let result = REGISTERED_INVESTORS.with(|investors| {
+        for investor in investors.borrow().values() {
+            if investor.principal_id == principal_id {
+                return Ok(Success::InvestorLogInSuccesfull { msg: format!("You've logged in as an Investor succesfully") });
+            }
+        }
+        Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
+    }); 
 
-//     result
-    
-// }
+    if let Ok(res) = result {
+        return Ok(res);
+    }
+
+    let result = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().values() {
+            if agribiz.principal_id == principal_id {
+                return Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("You've logged in as an Investor succesfully") });
+            }
+        }
+        Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
+    }); 
+   
+   result 
+}
