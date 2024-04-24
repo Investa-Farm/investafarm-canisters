@@ -16,14 +16,14 @@ type Memory = VirtualMemory<DefaultMemoryImpl>;
 pub struct Farmer {
   pub id: u64, 
   principal_id: Principal, 
-  farmer_name: String, 
+  farmer_name: Option<String>, 
   farm_name: String, 
   farm_description: String, 
-  amount_invested: u64, 
+  amount_invested: Option<u64>, 
   investors_ids: Principal, 
   pub verified: bool, 
   agri_business: Option<String>, 
-  insured: bool
+  insured: Option<bool>
 }
 
 impl Default for Farmer {
@@ -31,14 +31,14 @@ impl Default for Farmer {
         Self {
          id: 0, 
          principal_id: Principal::anonymous(),
-         farmer_name: String::new(), 
+         farmer_name: None, 
          farm_name: String::new(), 
          farm_description: String::new(), 
-         amount_invested: 0, 
+         amount_invested: None, 
          investors_ids: Principal::anonymous(), 
          verified: false, 
          agri_business: None, 
-         insured: false
+         insured: None 
         }
     } 
 }
@@ -222,26 +222,26 @@ thread_local! {
 
     pub static INVESTOR_STORAGE: RefCell<StableBTreeMap<u64, Investor, Memory>> = 
     RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(2)))
     )); 
 
     pub static SUPPLY_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, SupplyAgriBusiness, Memory>> = 
     RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(3)))
     )); 
 
     pub static FARMS_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, FarmsAgriBusiness, Memory>> = 
     RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(4)))
     )); 
     
     static FARMER_ID: RefCell<u64> = RefCell::new(0);
 
-    static INVESTOR_ID: RefCell<u64> = RefCell::new(0);
+    static INVESTOR_ID: RefCell<u64> = RefCell::new(1);
 
-    static SUPPLY_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(0);
+    static SUPPLY_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(2);
 
-    static FARMS_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(0);
+    static FARMS_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(3);
     
     // Mapping farmers with their farm names: for ensuring there are no duplicate farm names
     static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
@@ -317,13 +317,13 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
        id, 
        principal_id: new_farmer_principal_id, 
        farm_name: new_farmer.farmer_name.clone(), 
-       farmer_name: new_farmer.farm_name, 
+       farmer_name: Some(new_farmer.farm_name.clone()), 
        farm_description: new_farmer.farm_description, 
-       amount_invested: 0, 
+       amount_invested: None, 
        investors_ids: Principal::anonymous(), 
        verified: false, 
        agri_business: None, 
-       insured: false
+       insured: None
    }; 
 
    let farmer_clone1 = farmer.clone();

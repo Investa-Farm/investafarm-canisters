@@ -8,9 +8,9 @@ type Farmer = record {
   id : nat64;
   agri_business : opt text;
   verified : bool;
-  amount_invested : nat64;
-  farmer_name : text;
-  insured : bool;
+  amount_invested : opt nat64;
+  farmer_name : opt text;
+  insured : opt bool;
   principal_id : principal;
   farm_name : text;
   investors_ids : principal;
