@@ -1,65 +1,54 @@
-use candid::{CandidType, Principal}; 
+use std::collections::HashMap;
+use std::cell::RefCell;
 
-use ic_cdk_macros::*; 
-use ic_ledger_types::{
-    AccountIdentifier, BlockIndex, Memo, Subaccount, Tokens, DEFAULT_SUBACCOUNT, 
-    MAINNET_LEDGER_CANISTER_ID
-}; 
+use ic_cdk::{query, update}; 
 
-use serde::{Deserialize, Serialize}; 
-use ic_cdk::api::call::RejectionCode; 
+// Defining structs 
+struct InvestorInvestments {
+    investments: HashMap<u64, Vec<(u64, f64, String)>>, // investor_id => [(farm_id, amount), ...]
+} 
 
-#[derive(CandidType, Serialize, Deserialize, Clone, Debug)]
-pub struct TransferArgs {
-    amount: Tokens, 
-    to_principal: Principal, 
-    to_subaccount: Option<Subaccount>
+struct FarmInvestments {
+    investments: HashMap<u64, Vec<(u64, f64, String)>>, // farm_id => [(investor_id, amount), ...]
 }
 
-// Error Messages 
-#[derive(CandidType, Deserialize)] 
-pub enum Error {
-    CallError(RejectionCode, String),
-}
-
-impl From<(RejectionCode, String)> for Error {
-   fn from(err: (RejectionCode, String)) -> Self {
-      Self::CallError(err.0, err.1)
-   }    
-}
-
-// Testing whether the ICP ledger canister works 
-#[update]
-pub async fn test_ledger() -> Result<String, Error> {
-    let ledger_id = Principal::from_text("ryjl3-tyaaa-aaaaa-aaaba-cai").unwrap(); 
-    let req = (); 
-    let (res,): (String,) = ic_cdk::call(ledger_id, "icrc1_name", (req,)).await?;
-    Ok(res) 
+thread_local! {
+    static INVESTOR_INVESTMENTS: RefCell<InvestorInvestments> = RefCell::new(InvestorInvestments { investments: HashMap::new() });
+    static FARM_INVESTMENTS: RefCell<FarmInvestments> = RefCell::new(FarmInvestments { investments: HashMap::new() });
 }
 
 #[update] 
-async fn transfer(args: TransferArgs) -> Result<BlockIndex, String> { 
-    
-    ic_cdk::println!(
-        "Transferring {} tokens to principal {} subaccount {:?}", 
-        &args.amount, 
-        &args.to_principal, 
-        &args.to_subaccount
-    ); 
+fn store_investments(
+    farm_id: u64, 
+    amount: f64, 
+    investor_id: u64, 
+    transaction_hash: String
+) -> Result<(), String> {
+    INVESTOR_INVESTMENTS.with(|investor_investments| {
+        let mut investor_investments = investor_investments.borrow_mut();
+        investor_investments.investments.entry(investor_id).or_insert_with(|| Vec::new()).push((farm_id, amount, transaction_hash.clone())); 
+    });
 
-    let to_subaccount = args.to_subaccount.unwrap_or(DEFAULT_SUBACCOUNT); 
-    let transfer_args = ic_ledger_types::TransferArgs {
-        memo: Memo(0), 
-        amount: args.amount, 
-        fee: Tokens::from_e8s(10_000), 
-        from_subaccount: None, 
-        to: AccountIdentifier::new(&args.to_principal, &to_subaccount), 
-        created_at_time: None 
-    }; 
+    FARM_INVESTMENTS.with(|farm_investments| {
+        let mut farm_investments = farm_investments.borrow_mut();
+        farm_investments.investments.entry(farm_id).or_insert_with(|| Vec::new()).push((investor_id, amount, transaction_hash));
+    });
 
-    ic_ledger_types::transfer(MAINNET_LEDGER_CANISTER_ID, transfer_args)
-       .await
-       .map_err(|e| format!("Failed to call ledger: {:?}", e))? 
-       .map_err(|e| format!("Ledger transfer error {:?}", e))
-    
+    Ok(())
+}
+
+#[query]
+fn get_investments_by_investor(investor_id: u64) -> Option<Vec<(u64, f64, String)>> {
+    INVESTOR_INVESTMENTS.with(|investor_investments| {
+        let investor_investments = investor_investments.borrow();
+        investor_investments.investments.get(&investor_id).cloned()
+    })
+}
+
+#[query]
+fn get_investments_by_farm(farm_id: u64) -> Option<Vec<(u64, f64, String)>> {
+    FARM_INVESTMENTS.with(|farm_investments| {
+        let farm_investments = farm_investments.borrow();
+        farm_investments.investments.get(&farm_id).cloned()
+    })
 }
