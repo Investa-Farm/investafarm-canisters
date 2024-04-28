@@ -118,11 +118,11 @@ pub struct SuppliedItems {
 #[derive(CandidType, Serialize, Deserialize, Clone)]  
 pub struct FarmsAgriBusiness {
     pub id: u64, 
-    agribusiness_name: String, 
-    total_farmers: u64, 
-    principal_id: Principal, 
+    pub agribusiness_name: String, 
+    pub total_farmers: u64, 
+    pub principal_id: Principal, 
     pub verified: bool, 
-    farms: Option<FarmsForAgriBusiness>
+    pub farms: Option<FarmsForAgriBusiness>
 }
 
 impl Default for FarmsAgriBusiness {
@@ -146,7 +146,6 @@ pub struct NewFarmsAgriBusiness {
 }
 
 type FarmsForAgriBusiness = HashMap<Farmer, u64>; 
-
 
 // Necessary as Internet Computer's architecture requires data to be serialized before it can be stored in stable memory or sent across canisters
 impl Storable for Farmer {
@@ -250,12 +249,11 @@ thread_local! {
     static REGISTERED_INVESTORS: RefCell<HashMap<String, Investor>> = RefCell::new(HashMap::new());
 
     // Mapping supply agri business with their names
-    static REGISTERED_SUPPLY_AGRIBUSINESS: RefCell<HashMap<String, SupplyAgriBusiness>> = RefCell::new(HashMap::new());
+    pub static REGISTERED_SUPPLY_AGRIBUSINESS: RefCell<HashMap<String, SupplyAgriBusiness>> = RefCell::new(HashMap::new());
 
     // Mapping farmer agri business with their names 
-    static REGISTERED_FARMS_AGRIBUSINESS: RefCell<HashMap<String, FarmsAgriBusiness>> = RefCell::new(HashMap::new());
+    pub static REGISTERED_FARMS_AGRIBUSINESS: RefCell<HashMap<String, FarmsAgriBusiness>> = RefCell::new(HashMap::new());
 }
-
 
 // Success Message
 #[derive(CandidType, Deserialize, Serialize)] 

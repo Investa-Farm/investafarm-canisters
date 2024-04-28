@@ -71,6 +71,7 @@ type SupplyAgriBusiness = record {
   principal_id : principal;
 };
 service : {
+  add_farm_to_agribusiness : (text, nat64) -> (Result);
   apply_for_loan : (NewLoan) -> (Result);
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;

@@ -1,5 +1,5 @@
 use candid::{CandidType, Encode, Decode}; 
-use ic_cdk::{query, update}; 
+use ic_cdk::update; 
 use ic_stable_structures::memory_manager::{MemoryManager, VirtualMemory, MemoryId};
 use ic_stable_structures::{StableBTreeMap, BoundedStorable, DefaultMemoryImpl, Storable};
 use serde::{Deserialize, Serialize}; 
@@ -7,7 +7,7 @@ use std::cell::RefCell;
 use std::time::Duration; 
 use std::borrow::Cow; 
 // use ic_cdk_timers::set_timer; 
-use crate::entitymanagement::{self, Farmer}; 
+// use crate::entitymanagement::{self, Farmer}; 
 
 type Memory = VirtualMemory<DefaultMemoryImpl>; 
 
