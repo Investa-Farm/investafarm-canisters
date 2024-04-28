@@ -41,6 +41,11 @@ type NewFarmsAgriBusiness = record {
   farms : opt vec record { Farmer; nat64 };
 };
 type NewInvestor = record { name : text };
+type NewLoan = record {
+  farm_id : nat64;
+  loan_amount : nat64;
+  farm_name : text;
+};
 type NewSupplyAgriBusiness = record {
   agribusiness_name : text;
   items_to_be_supplied : opt vec record { text; nat64 };
@@ -66,6 +71,7 @@ type SupplyAgriBusiness = record {
   principal_id : principal;
 };
 service : {
+  apply_for_loan : (NewLoan) -> (Result);
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
   display_investors : () -> (vec Investor) query;

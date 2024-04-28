@@ -17,7 +17,7 @@ pub struct Farmer {
   pub id: u64, 
   principal_id: Principal, 
   farmer_name: Option<String>, 
-  farm_name: String, 
+  pub farm_name: String, 
   farm_description: String, 
   amount_invested: Option<u64>, 
   investors_ids: Principal, 
