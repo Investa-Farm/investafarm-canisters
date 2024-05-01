@@ -6,10 +6,10 @@ type Error = variant {
 };
 type Farmer = record {
   id : nat64;
-  agri_business : opt text;
+  agri_business : text;
   verified : bool;
   amount_invested : opt nat64;
-  farmer_name : opt text;
+  farmer_name : text;
   insured : opt bool;
   principal_id : principal;
   farm_name : text;
@@ -22,7 +22,6 @@ type FarmsAgriBusiness = record {
   agribusiness_name : text;
   principal_id : principal;
   total_farmers : nat64;
-  farms : opt vec record { Farmer; nat64 };
 };
 type Investor = record {
   id : nat64;
@@ -38,7 +37,6 @@ type NewFarmer = record {
 type NewFarmsAgriBusiness = record {
   agribusiness_name : text;
   total_farmers : nat64;
-  farms : opt vec record { Farmer; nat64 };
 };
 type NewInvestor = record { name : text };
 type NewLoan = record {
@@ -71,12 +69,13 @@ type SupplyAgriBusiness = record {
   principal_id : principal;
 };
 service : {
-  add_farm_to_agribusiness : (text, nat64) -> (Result);
+  add_farm_to_agribusiness : (NewFarmer, text, nat64) -> (Result);
   apply_for_loan : (NewLoan) -> (Result);
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
   display_investors : () -> (vec Investor) query;
   display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
+  get_farms_for_agribusiness : () -> (vec Farmer) query;
   get_investments_by_farm : (nat64) -> (
       opt vec record { nat64; float64; text },
     ) query;

@@ -7,6 +7,7 @@ use std::{borrow::Cow, cell::RefCell};
 use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap }; 
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager,VirtualMemory};
 use std::collections::HashMap; 
+// use std::collections::BTreeMap;
 
 type Memory = VirtualMemory<DefaultMemoryImpl>; 
 // type IdCell = Cell<u64, Memory>; 
@@ -15,15 +16,15 @@ type Memory = VirtualMemory<DefaultMemoryImpl>;
 #[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Farmer {
   pub id: u64, 
-  principal_id: Principal, 
-  farmer_name: Option<String>, 
+  pub principal_id: Principal, 
+  pub farmer_name: String, 
   pub farm_name: String, 
-  farm_description: String, 
-  amount_invested: Option<u64>, 
-  investors_ids: Principal, 
+  pub farm_description: String, 
+  pub amount_invested: Option<u64>, 
+  pub investors_ids: Principal, 
   pub verified: bool, 
-  agri_business: Option<String>, 
-  insured: Option<bool>
+  pub agri_business: String, 
+  pub insured: Option<bool>
 }
 
 impl Default for Farmer {
@@ -31,13 +32,13 @@ impl Default for Farmer {
         Self {
          id: 0, 
          principal_id: Principal::anonymous(),
-         farmer_name: None, 
+         farmer_name: String::new(), 
          farm_name: String::new(), 
          farm_description: String::new(), 
          amount_invested: None, 
          investors_ids: Principal::anonymous(), 
          verified: false, 
-         agri_business: None, 
+         agri_business: String::new(), 
          insured: None 
         }
     } 
@@ -45,9 +46,9 @@ impl Default for Farmer {
 
 #[derive(CandidType, Serialize, Deserialize)] 
 pub struct NewFarmer {
-    farmer_name: String, 
-    farm_name: String, 
-    farm_description: String 
+    pub farmer_name: String, 
+    pub farm_name: String, 
+    pub farm_description: String 
 }
 
 // Investor Struct 
@@ -122,7 +123,7 @@ pub struct FarmsAgriBusiness {
     pub total_farmers: u64, 
     pub principal_id: Principal, 
     pub verified: bool, 
-    pub farms: Option<FarmsForAgriBusiness>
+    // pub farms: Option<FarmsForAgriBusiness>
 }
 
 impl Default for FarmsAgriBusiness {
@@ -133,7 +134,7 @@ impl Default for FarmsAgriBusiness {
          total_farmers: 0, 
          verified: false, 
          principal_id: Principal::anonymous(), 
-         farms: None
+        //  farms: None
         }
     }    
 }
@@ -142,10 +143,11 @@ impl Default for FarmsAgriBusiness {
 pub struct NewFarmsAgriBusiness {
     agribusiness_name: String, 
     total_farmers: u64, 
-    farms: Option<FarmsForAgriBusiness>
+    // farms: Option<FarmsForAgriBusiness>
 }
 
-type FarmsForAgriBusiness = HashMap<Farmer, u64>; 
+// type FarmsForAgriBusiness = HashMap<Farmer, u64>; 
+// pub type FarmsForAgriBusiness = BTreeMap<u64, Farmer>; 
 
 // Necessary as Internet Computer's architecture requires data to be serialized before it can be stored in stable memory or sent across canisters
 impl Storable for Farmer {
@@ -233,8 +235,13 @@ thread_local! {
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(4)))
     )); 
+
+    pub static FARMS_FOR_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, Farmer, Memory>> = 
+    RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(5)))
+    )); 
     
-    static FARMER_ID: RefCell<u64> = RefCell::new(0);
+    pub static FARMER_ID: RefCell<u64> = RefCell::new(0);
 
     static INVESTOR_ID: RefCell<u64> = RefCell::new(1);
 
@@ -315,12 +322,12 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
        id, 
        principal_id: new_farmer_principal_id, 
        farm_name: new_farmer.farmer_name.clone(), 
-       farmer_name: Some(new_farmer.farm_name.clone()), 
+       farmer_name: new_farmer.farm_name.clone(), 
        farm_description: new_farmer.farm_description, 
        amount_invested: None, 
        investors_ids: Principal::anonymous(), 
        verified: false, 
-       agri_business: None, 
+       agri_business: String::new(), 
        insured: None
    }; 
 
@@ -340,14 +347,14 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
    
 }
 
-fn _increament_id(id: &RefCell<u64>) -> u64 {
+pub fn _increament_id(id: &RefCell<u64>) -> u64 {
     let mut id_borrowed = id.borrow_mut();
     let new_id = *id_borrowed + 1;
     *id_borrowed = new_id;
     new_id
 }
 
-fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Error> {
+pub fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Error> {
     let mut is_principal_id_registered = false; 
 
     REGISTERED_FARMERS.with(|farmers| {
@@ -369,6 +376,15 @@ fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Error>
     }); 
 
     REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().values() {
+            if agribiz.principal_id == new_principal_id {
+                is_principal_id_registered = true; 
+                break; 
+            }
+        }
+    }); 
+
+    REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
         for agribiz in agribusiness.borrow().values() {
             if agribiz.principal_id == new_principal_id {
                 is_principal_id_registered = true; 
@@ -422,7 +438,6 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
    }); 
 
    Ok(Success::InvestorRegisteredSuccesfully { msg: format!("Investor has been registered succesfully") })
-
 }
 
 // FUNCTION FOR REGISTERING SUPPLY AGRI BUSINESS 
@@ -490,7 +505,7 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
         verified: false, 
         principal_id: new_farms_agribusiness_principal_id, 
         total_farmers: new_farms_agribusiness.total_farmers, 
-        farms: new_farms_agribusiness.farms
+        // farms: new_farms_agribusiness.farms
     }; 
 
     let farms_agri_business_clone1 = farms_agri_business.clone(); 
