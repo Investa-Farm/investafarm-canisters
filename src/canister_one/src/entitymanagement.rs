@@ -24,7 +24,8 @@ pub struct Farmer {
   pub investors_ids: Principal, 
   pub verified: bool, 
   pub agri_business: String, 
-  pub insured: Option<bool>
+  pub insured: Option<bool>, 
+  pub publish: bool
 }
 
 impl Default for Farmer {
@@ -39,7 +40,8 @@ impl Default for Farmer {
          investors_ids: Principal::anonymous(), 
          verified: false, 
          agri_business: String::new(), 
-         insured: None 
+         insured: None,
+         publish: false 
         }
     } 
 }
@@ -272,7 +274,8 @@ pub enum Success {
   FarmerLogInSuccesfull { msg: String }, 
   InvestorLogInSuccesfull { msg: String }, 
   SupplyAgriBusinessLogInSuccesfull { msg: String }, 
-  FarmsAgriBusinessLogInSuccesfull { msg: String }
+  FarmsAgriBusinessLogInSuccesfull { msg: String }, 
+  FarmPublishedSuccesfully { msg: String }
 }
 
 // Error Messages 
@@ -281,7 +284,9 @@ pub enum Error {
     FieldEmpty { msg: String }, 
     FarmNameTaken { msg: String }, 
     PrincipalIdAlreadyRegistered { msg: String }, 
-    YouAreNotRegistered { msg: String }
+    YouAreNotRegistered { msg: String }, 
+    NotAuthorized { msg: String }, 
+    ErrorOccured { msg: String }
 }
 
 // Login function 
@@ -328,7 +333,8 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
        investors_ids: Principal::anonymous(), 
        verified: false, 
        agri_business: String::new(), 
-       insured: None
+       insured: None, 
+       publish: true
    }; 
 
    let farmer_clone1 = farmer.clone();

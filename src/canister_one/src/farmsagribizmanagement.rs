@@ -1,54 +1,7 @@
 use candid::Principal;
 use ic_cdk::{query, update};
 
-use crate::entitymanagement::{self, Farmer};
-
-// #[update]
-// fn add_farm_to_agribusiness(agribusiness_name: String, farm_id: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
-// // fn add_farm_to_agribusiness(agribusiness_name: String, farm_id: u64) -> Farmer {
-//     let caller = ic_cdk::caller();
-//     let mut agribusiness_found = false;
-
-//     entitymanagement::REGISTERED_FARMS_AGRIBUSINESS.with(|agribusinesses| {
-//         if let Some(mut agribusiness) = agribusinesses.borrow_mut().get_mut(&agribusiness_name) {
-//             if agribusiness.principal_id == caller {
-//                 let farmer  = entitymanagement::FARMER_STORAGE.with(|farmers| farmers.borrow().get(&farm_id)); 
-                 
-//                 if let Some(farmer) = farmer {
-//                     let mut farms = agribusiness.farms.get_or_insert_with(entitymanagement::FarmsForAgriBusiness::new); 
-                    
-//                     farms.insert(farmer.clone(), 0); 
-//                     agribusiness.total_farmers += 1; 
-
-//                     // let updated_agribusiness = entitymanagement::FarmsAgriBusiness {
-//                     //     id: agribusiness.id,
-//                     //     agribusiness_name: agribusiness.agribusiness_name.clone(),
-//                     //     total_farmers: agribusiness.total_farmers + 1,
-//                     //     principal_id: agribusiness.principal_id,
-//                     //     verified: agribusiness.verified,
-//                     //     farms: Some(farms),
-//                     // };
-
-//                     // entitymanagement::FARMS_AGRIBUSINESS_STORAGE.with(|agribusinesses| {
-//                     //     agribusinesses.borrow_mut().insert(agribusiness.id, updated_agribusiness);
-//                     // });
-
-//                     agribusiness_found = true;
-//                 }
-//             }
-//         }
-//     });
-
-//     if agribusiness_found {
-//         Ok(entitymanagement::Success::FarmsAgriBizRegisteredSuccesfully {
-//             msg: format!("Farm added successfully to the agribusiness: {}", agribusiness_name),
-//         })
-//     } else {
-//         Err(entitymanagement::Error::YouAreNotRegistered {
-//             msg: "You are not registered as a FarmsAgriBusiness, or the agribusiness name is incorrect.".to_string(),
-//         })
-//     }
-// }
+use crate::entitymanagement::{self};
 
 #[update] 
 fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusiness_name: String, agribusiness_id: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
@@ -72,7 +25,8 @@ fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusines
             investors_ids: Principal::anonymous(),
             verified: true,
             agri_business: agribusiness_name.clone(),
-            insured: None
+            insured: None, 
+            publish: false 
         };
 
         let farmer_clone1 = farmer.clone();
@@ -103,4 +57,29 @@ fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusines
 #[query] 
 fn get_farms_for_agribusiness() -> Vec<entitymanagement::Farmer> {
    entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE.with(|farms| farms.borrow().iter().map(|(_, item)| item.clone()).collect())
+}
+
+#[update] 
+fn publish_unpublish(farm_id: u64, publish: bool) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    let caller = ic_cdk::caller();
+
+    let mut farms_for_agribusiness = get_farms_for_agribusiness(); 
+
+    if let Some(farm) = farms_for_agribusiness.iter_mut().find(|f| f.principal_id == caller) {
+        farm.publish = publish; 
+
+        let farm_clone_1 = farm.clone(); 
+        let farm_clone_2 = farm.clone(); 
+        
+        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE.with(|service| service.borrow_mut().insert(farm_id, farm_clone_1)); 
+        
+        entitymanagement::FARMER_STORAGE.with(|service| service.borrow_mut().insert(farm_id, farm_clone_2)); 
+        
+        Ok(entitymanagement::Success::FarmPublishedSuccesfully { 
+            msg: format!("Farm publish status succesfully updated to {}", farm.publish) 
+        }) 
+
+    } else {
+        Err(entitymanagement::Error::NotAuthorized { msg: format!("Farm not found!") })
+    }
 }

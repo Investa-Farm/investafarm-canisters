@@ -1,7 +1,9 @@
 type Error = variant {
   FieldEmpty : record { msg : text };
   YouAreNotRegistered : record { msg : text };
+  ErrorOccured : record { msg : text };
   PrincipalIdAlreadyRegistered : record { msg : text };
+  NotAuthorized : record { msg : text };
   FarmNameTaken : record { msg : text };
 };
 type Farmer = record {
@@ -11,6 +13,7 @@ type Farmer = record {
   amount_invested : opt nat64;
   farmer_name : text;
   insured : opt bool;
+  publish : bool;
   principal_id : principal;
   farm_name : text;
   investors_ids : principal;
@@ -57,6 +60,7 @@ type Success = variant {
   FarmsAgriBizRegisteredSuccesfully : record { msg : text };
   SupplyAgriBizRegisteredSuccesfully : record { msg : text };
   FarmerLogInSuccesfull : record { msg : text };
+  FarmPublishedSuccesfully : record { msg : text };
   InvestorRegisteredSuccesfully : record { msg : text };
   FarmCreatedSuccesfully : record { msg : text };
   InvestorLogInSuccesfull : record { msg : text };
@@ -83,6 +87,7 @@ service : {
       opt vec record { nat64; float64; text },
     ) query;
   log_in : () -> (Result) query;
+  publish_unpublish : (nat64, bool) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
