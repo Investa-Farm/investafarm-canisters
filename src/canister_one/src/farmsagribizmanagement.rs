@@ -1,10 +1,12 @@
+use std::borrow::BorrowMut;
+
 use candid::Principal;
 use ic_cdk::{query, update};
 
 use crate::entitymanagement::{self};
 
 #[update] 
-fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusiness_name: String, agribusiness_id: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
+fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusiness_name: String) -> Result<entitymanagement::Success, entitymanagement::Error> {
     if new_farmer.farmer_name.is_empty() || new_farmer.farm_name.is_empty() || new_farmer.farm_description.is_empty() {
         return Err(entitymanagement::Error::FieldEmpty { msg: format!("Kindly ensure all required fieilds are filled!") })
     }
@@ -81,5 +83,33 @@ fn publish_unpublish(farm_id: u64, publish: bool) -> Result<entitymanagement::Su
 
     } else {
         Err(entitymanagement::Error::NotAuthorized { msg: format!("Farm not found!") })
+    }
+}     
+
+#[update] 
+fn delete_farm(farm_id: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    let caller = ic_cdk::caller(); 
+    
+    let mut farms_for_agribusiness = get_farms_for_agribusiness(); 
+
+    if let Some(index) = farms_for_agribusiness.iter().position(|f| f.id == farm_id && f.principal_id == caller) {
+        let farm = farms_for_agribusiness.remove(index); 
+
+        // Remove the farm from FARMS_FOR_AGRI_BUSINESS 
+        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE.with(|farms| {
+            let mut farms = farms.borrow_mut(); 
+            farms.remove(&farm_id); 
+        }); 
+
+
+        // Remove the farm from FARMER_STORAGE 
+        entitymanagement::FARMER_STORAGE.with(|farmers| {
+            let mut farmers = farmers.borrow_mut(); 
+            farmers.remove(&farm_id); 
+        }); 
+
+        Ok(entitymanagement::Success::FarmDeletedSuccesfully { msg: format!("Farm {} has been deleted succesfully", farm.farm_name) }) 
+    } else {
+        Err(entitymanagement::Error::ErrorOccured { msg: format!("An error occured!") })
     }
 }

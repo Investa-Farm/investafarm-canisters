@@ -63,6 +63,7 @@ type Success = variant {
   FarmPublishedSuccesfully : record { msg : text };
   InvestorRegisteredSuccesfully : record { msg : text };
   FarmCreatedSuccesfully : record { msg : text };
+  FarmDeletedSuccesfully : record { msg : text };
   InvestorLogInSuccesfull : record { msg : text };
 };
 type SupplyAgriBusiness = record {
@@ -73,8 +74,9 @@ type SupplyAgriBusiness = record {
   principal_id : principal;
 };
 service : {
-  add_farm_to_agribusiness : (NewFarmer, text, nat64) -> (Result);
+  add_farm_to_agribusiness : (NewFarmer, text) -> (Result);
   apply_for_loan : (NewLoan) -> (Result);
+  delete_farm : (nat64) -> (Result);
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
   display_investors : () -> (vec Investor) query;

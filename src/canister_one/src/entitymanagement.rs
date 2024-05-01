@@ -275,7 +275,8 @@ pub enum Success {
   InvestorLogInSuccesfull { msg: String }, 
   SupplyAgriBusinessLogInSuccesfull { msg: String }, 
   FarmsAgriBusinessLogInSuccesfull { msg: String }, 
-  FarmPublishedSuccesfully { msg: String }
+  FarmPublishedSuccesfully { msg: String }, 
+  FarmDeletedSuccesfully { msg: String }
 }
 
 // Error Messages 
