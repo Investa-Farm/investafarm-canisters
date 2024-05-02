@@ -589,6 +589,19 @@ pub fn log_in() -> Result<Success, Error> {
         }
         Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
     }); 
+
+    if let Ok(res) = result {
+        return Ok(res);
+    }
+
+    let result = REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().values() {
+            if agribiz.principal_id == principal_id {
+                return Ok(Success::FarmsAgriBizRegisteredSuccesfully { msg: format!("You've logged in as an Investor succesfully") });
+            }
+        }
+        Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
+    }); 
    
    result 
 }
