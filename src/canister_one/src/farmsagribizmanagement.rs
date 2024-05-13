@@ -1,4 +1,4 @@
-use std::borrow::BorrowMut;
+// use std::borrow::BorrowMut;
 
 use candid::Principal;
 use ic_cdk::{query, update};
@@ -84,7 +84,7 @@ fn publish_unpublish(farm_id: u64, publish: bool) -> Result<entitymanagement::Su
     } else {
         Err(entitymanagement::Error::NotAuthorized { msg: format!("Farm not found!") })
     }
-}     
+}            
 
 #[update] 
 fn delete_farm(farm_id: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
