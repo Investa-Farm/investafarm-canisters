@@ -83,10 +83,10 @@ service : {
   display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
   get_farms_for_agribusiness : () -> (vec Farmer) query;
   get_investments_by_farm : (nat64) -> (
-      opt vec record { nat64; float64; text },
+      opt vec record { nat64; float64; text; text },
     ) query;
   get_investments_by_investor : (nat64) -> (
-      opt vec record { nat64; float64; text },
+      opt vec record { nat64; float64; text; text },
     ) query;
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
@@ -94,7 +94,7 @@ service : {
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
-  store_investments : (nat64, float64, nat64, text) -> (Result_1);
+  store_investments : (nat64, float64, nat64, text, text) -> (Result_1);
   test_frontend : () -> (text) query;
   verify_farmer : (nat64, bool) -> (Result_2);
   verify_farms_agribusiness : (nat64, bool) -> (Result_2);

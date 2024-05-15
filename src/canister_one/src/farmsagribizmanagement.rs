@@ -80,7 +80,7 @@ fn publish_unpublish(farm_id: u64, publish: bool) -> Result<entitymanagement::Su
         Ok(entitymanagement::Success::FarmPublishedSuccesfully { 
             msg: format!("Farm publish status succesfully updated to {}", farm.publish) 
         }) 
-
+        
     } else {
         Err(entitymanagement::Error::NotAuthorized { msg: format!("Farm not found!") })
     }
@@ -100,7 +100,6 @@ fn delete_farm(farm_id: u64) -> Result<entitymanagement::Success, entitymanageme
             let mut farms = farms.borrow_mut(); 
             farms.remove(&farm_id); 
         }); 
-
 
         // Remove the farm from FARMER_STORAGE 
         entitymanagement::FARMER_STORAGE.with(|farmers| {
