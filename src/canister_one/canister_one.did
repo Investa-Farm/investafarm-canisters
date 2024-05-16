@@ -42,11 +42,6 @@ type NewFarmsAgriBusiness = record {
   total_farmers : nat64;
 };
 type NewInvestor = record { name : text };
-type NewLoan = record {
-  farm_id : nat64;
-  loan_amount : nat64;
-  farm_name : text;
-};
 type NewSupplyAgriBusiness = record {
   agribusiness_name : text;
   items_to_be_supplied : opt vec record { text; nat64 };
@@ -75,7 +70,7 @@ type SupplyAgriBusiness = record {
 };
 service : {
   add_farm_to_agribusiness : (NewFarmer, text) -> (Result);
-  apply_for_loan : (NewLoan) -> (Result);
+  apply_for_loan : (nat64, nat64) -> (Result);
   delete_farm : (nat64) -> (Result);
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;

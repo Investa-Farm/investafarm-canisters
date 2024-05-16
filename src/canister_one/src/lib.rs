@@ -3,7 +3,7 @@ use crate::entitymanagement::Error;
 use crate::entitymanagement::Success; 
 use crate::askforloan::NewLoan; 
 // use crate::entitymanagement::Farmer; 
-// use crate::askforloan::Loan; 
+use crate::askforloan::Loan; 
 // use ic_ledger_types::BlockIndex; 
 // use crate::icpledger::TransferArgs;
 use candid::Principal; 
@@ -13,6 +13,7 @@ mod adminapproval;
 mod payments;
 mod askforloan;
 mod farmsagribizmanagement;
+mod askforloan2;
 // mod icpledger; 
 
 // Frontend Intergration Testing 
