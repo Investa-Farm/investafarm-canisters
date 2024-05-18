@@ -1,6 +1,6 @@
 use std::{borrow::Cow, cell::RefCell};
 use candid::{CandidType, Decode, Encode};
-use ic_stable_structures::{memory_manager::MemoryId, BoundedStorable, DefaultMemoryImpl, Memory, StableBTreeMap, Storable }; 
+use ic_stable_structures::{memory_manager::MemoryId, BoundedStorable, StableBTreeMap, Storable }; 
 use ic_cdk::{update, query};
 use serde::{Serialize, Deserialize}; 
 

@@ -1,7 +1,7 @@
 use ic_cdk::{query, update}; 
 use crate::entitymanagement::Error; 
 use crate::entitymanagement::Success; 
-use crate::farmerFiles::FarmerReport; 
+use crate::farmerfiles::FarmerReport; 
 // use crate::askforloan::NewLoan; 
 // use crate::entitymanagement::Farmer; 
 // use crate::askforloan::Loan; 
@@ -16,7 +16,7 @@ mod payments;
 mod farmsagribizmanagement;
 // mod askforloan2;
 // mod icpledger; 
-mod farmerFiles;
+mod farmerfiles;
 
 // Frontend Intergration Testing 
 #[query]
