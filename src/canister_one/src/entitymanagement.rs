@@ -9,7 +9,7 @@ use ic_stable_structures::memory_manager::{MemoryId, MemoryManager,VirtualMemory
 use std::collections::HashMap; 
 // use std::collections::BTreeMap;
 
-type Memory = VirtualMemory<DefaultMemoryImpl>; 
+pub type Memory = VirtualMemory<DefaultMemoryImpl>; 
 // type IdCell = Cell<u64, Memory>; 
 
 // Farmer Struct 
@@ -276,7 +276,8 @@ pub enum Success {
   SupplyAgriBusinessLogInSuccesfull { msg: String }, 
   FarmsAgriBusinessLogInSuccesfull { msg: String }, 
   FarmPublishedSuccesfully { msg: String }, 
-  FarmDeletedSuccesfully { msg: String }
+  FarmDeletedSuccesfully { msg: String }, 
+  ReportUploadedSuccesfully { msg: String }
 }
 
 // Error Messages 
@@ -287,7 +288,8 @@ pub enum Error {
     PrincipalIdAlreadyRegistered { msg: String }, 
     YouAreNotRegistered { msg: String }, 
     NotAuthorized { msg: String }, 
-    ErrorOccured { msg: String }
+    ErrorOccured { msg: String }, 
+    Error { msg: String }
 }
 
 // Login function 

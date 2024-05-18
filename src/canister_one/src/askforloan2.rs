@@ -2,7 +2,7 @@ use std::{collections::HashMap, time::Duration};
 use std::cell::RefCell; 
 use serde::{Deserialize, Serialize}; 
 use candid::CandidType;
-use ic_cdk::{update};
+// use ic_cdk::{update};
 
 struct Loan {
    loans: HashMap<u64, Vec<(u64, Duration)>>,  // farmer_id => [(amount, duration)]
