@@ -4,7 +4,7 @@ use crate::entitymanagement::Success;
 use crate::farmerfiles::FarmerReport; 
 // use crate::askforloan::NewLoan; 
 // use crate::entitymanagement::Farmer; 
-// use crate::askforloan::Loan; 
+use crate::askforloan2::Loan; 
 // use ic_ledger_types::BlockIndex; 
 // use crate::icpledger::TransferArgs;
 use candid::Principal; 
@@ -14,7 +14,7 @@ mod adminapproval;
 mod payments;
 // mod askforloan;
 mod farmsagribizmanagement;
-// mod askforloan2;
+mod askforloan2;
 // mod icpledger; 
 mod farmerfiles;
 
