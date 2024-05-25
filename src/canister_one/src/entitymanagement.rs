@@ -509,7 +509,7 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
     let id = FARMS_AGRIBUSINESS_ID.with(|id| _increament_id(id)); 
 
     let farms_agri_business = FarmsAgriBusiness {
-        id: 0, 
+        id, 
         agribusiness_name: new_farms_agribusiness.agribusiness_name,  
         verified: false, 
         principal_id: new_farms_agribusiness_principal_id, 

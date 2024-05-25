@@ -1,3 +1,4 @@
+type Duration = record { secs : nat64; nanos : nat32 };
 type Error = variant {
   Error : record { msg : text };
   FieldEmpty : record { msg : text };
@@ -39,7 +40,7 @@ type Investor = record {
   name : text;
   principal_id : principal;
 };
-type Loan = record { farmer_id : nat64; amount : nat64 };
+type Loan = record { duration : Duration; farmer_id : nat64; amount : nat64 };
 type NewFarmer = record {
   farmer_name : text;
   farm_name : text;

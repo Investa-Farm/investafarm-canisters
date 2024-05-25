@@ -1,4 +1,4 @@
-use std::{collections::HashMap, time::Duration}; 
+use std::time::Duration; 
 use ic_stable_structures::{memory_manager::MemoryId, BoundedStorable, StableBTreeMap, Storable }; 
 use std::{borrow::Cow, cell::RefCell};
 use serde::{Deserialize, Serialize}; 
@@ -12,7 +12,7 @@ use crate::entitymanagement;
 pub struct Loan {
     farmer_id: u64, 
     amount: u64, 
-    // duration: Duration
+    duration: Duration
 }
 
 impl Storable for Loan {
@@ -37,7 +37,7 @@ impl BoundedStorable for Loan {
 thread_local! {
     pub static FARM_REPORTS: RefCell<StableBTreeMap<u64, Loan, entitymanagement::Memory>> = 
     RefCell::new(StableBTreeMap::init(
-      entitymanagement::MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(7)))
+      entitymanagement::MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(8)))
     )); 
 }
 
@@ -65,7 +65,7 @@ fn apply_for_loan(farm_id: u64, amount: u64) -> Result<Success, Error> {
     let loan = Loan {
         farmer_id: farm_id,
         amount,
-        // duration: Duration::from_secs(180 * 24 * 60 * 60), 
+        duration: Duration::from_secs(180 * 24 * 60 * 60), 
     };
 
     FARM_REPORTS.with(|reports| {
