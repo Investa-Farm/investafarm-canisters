@@ -284,7 +284,8 @@ pub enum Success {
   FarmPublishedSuccesfully { msg: String }, 
   FarmDeletedSuccesfully { msg: String }, 
   ReportUploadedSuccesfully { msg: String }, 
-  CreditScoreAdded { msg: String }
+  CreditScoreAdded { msg: String }, 
+  AppliedForLoanSuccesfully { msg: String }
 }
 
 // Error Messages 

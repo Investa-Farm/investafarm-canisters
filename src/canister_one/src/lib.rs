@@ -2,9 +2,7 @@ use ic_cdk::{query, update};
 use crate::entitymanagement::Error; 
 use crate::entitymanagement::Success; 
 use crate::farmerfiles::FarmerReport; 
-// use crate::askforloan::NewLoan; 
 // use crate::entitymanagement::Farmer; 
-use crate::askforloan2::Loan; 
 // use ic_ledger_types::BlockIndex; 
 // use crate::icpledger::TransferArgs;
 use candid::Principal; 
@@ -12,12 +10,10 @@ use candid::Principal;
 mod entitymanagement;
 mod adminapproval;
 mod payments;
-// mod askforloan;
 mod farmsagribizmanagement;
-mod askforloan2;
-// mod icpledger; 
 mod farmerfiles;
 mod creditscore;
+mod askforloan;
 
 // Frontend Intergration Testing 
 #[query]
