@@ -25,7 +25,10 @@ pub struct Farmer {
   pub verified: bool, 
   pub agri_business: String, 
   pub insured: Option<bool>, 
-  pub publish: bool
+  pub publish: bool, 
+  pub ifarm_tokens: Option<u64>, 
+  pub credit_score: Option<u64>, 
+  pub current_loan_ask: Option<u64>
 }
 
 impl Default for Farmer {
@@ -41,7 +44,10 @@ impl Default for Farmer {
          verified: false, 
          agri_business: String::new(), 
          insured: None,
-         publish: false 
+         publish: false, 
+         ifarm_tokens: None, 
+         credit_score: None, 
+         current_loan_ask: None
         }
     } 
 }
@@ -277,7 +283,8 @@ pub enum Success {
   FarmsAgriBusinessLogInSuccesfull { msg: String }, 
   FarmPublishedSuccesfully { msg: String }, 
   FarmDeletedSuccesfully { msg: String }, 
-  ReportUploadedSuccesfully { msg: String }
+  ReportUploadedSuccesfully { msg: String }, 
+  CreditScoreAdded { msg: String }
 }
 
 // Error Messages 
@@ -337,7 +344,10 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
        verified: false, 
        agri_business: String::new(), 
        insured: None, 
-       publish: true
+       publish: true, 
+       ifarm_tokens: None, 
+       credit_score: None, 
+       current_loan_ask: None 
    }; 
 
    let farmer_clone1 = farmer.clone();

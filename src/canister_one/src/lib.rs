@@ -17,6 +17,7 @@ mod farmsagribizmanagement;
 mod askforloan2;
 // mod icpledger; 
 mod farmerfiles;
+mod creditscore;
 
 // Frontend Intergration Testing 
 #[query]

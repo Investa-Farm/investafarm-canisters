@@ -15,7 +15,7 @@ fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusines
      
     let response = entitymanagement::_is_principal_id_registered(ic_cdk::caller()); 
 
-    if let Err(entitymanagement::Error::PrincipalIdAlreadyRegistered { msg }) = response {
+    if let Err(entitymanagement::Error::PrincipalIdAlreadyRegistered { msg: _ }) = response {
         // Code for when the principal ID is already registered
         let farmer = entitymanagement::Farmer {
             id,
@@ -28,7 +28,10 @@ fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusines
             verified: true,
             agri_business: agribusiness_name.clone(),
             insured: None, 
-            publish: false 
+            publish: false, 
+            ifarm_tokens: None, 
+            credit_score: None, 
+            current_loan_ask: None
         };
 
         let farmer_clone1 = farmer.clone();

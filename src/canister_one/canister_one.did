@@ -12,12 +12,15 @@ type Farmer = record {
   id : nat64;
   agri_business : text;
   verified : bool;
+  current_loan_ask : opt nat64;
   amount_invested : opt nat64;
+  ifarm_tokens : opt nat64;
   farmer_name : text;
   insured : opt bool;
   publish : bool;
   principal_id : principal;
   farm_name : text;
+  credit_score : opt nat64;
   investors_ids : principal;
   farm_description : text;
 };
@@ -61,6 +64,7 @@ type Result_2 = variant { Ok; Err : text };
 type Result_3 = variant { Ok; Err : Error };
 type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
+  CreditScoreAdded : record { msg : text };
   SupplyAgriBusinessLogInSuccesfull : record { msg : text };
   FarmsAgriBizRegisteredSuccesfully : record { msg : text };
   SupplyAgriBizRegisteredSuccesfully : record { msg : text };
@@ -80,6 +84,7 @@ type SupplyAgriBusiness = record {
   principal_id : principal;
 };
 service : {
+  add_credit_score : (nat64, nat64) -> (Result);
   add_farm_to_agribusiness : (NewFarmer, text) -> (Result);
   apply_for_loan : (nat64, nat64) -> (Result);
   delete_farm : (nat64) -> (Result);
