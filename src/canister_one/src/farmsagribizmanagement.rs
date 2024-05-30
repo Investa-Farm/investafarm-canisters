@@ -31,7 +31,10 @@ fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusines
             publish: false, 
             ifarm_tokens: None, 
             credit_score: None, 
-            current_loan_ask: None
+            current_loan_ask: None, 
+            loaned: false, 
+            loan_maturity: None, 
+            time_for_funding_round_to_expire: None
         };
 
         let farmer_clone1 = farmer.clone();

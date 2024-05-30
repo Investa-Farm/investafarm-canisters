@@ -13,13 +13,16 @@ type Farmer = record {
   agri_business : text;
   verified : bool;
   current_loan_ask : opt nat64;
+  loaned : bool;
   amount_invested : opt nat64;
+  time_for_funding_round_to_expire : opt Duration;
   ifarm_tokens : opt nat64;
   farmer_name : text;
   insured : opt bool;
   publish : bool;
   principal_id : principal;
   farm_name : text;
+  loan_maturity : opt Duration;
   credit_score : opt nat64;
   investors_ids : principal;
   farm_description : text;
@@ -43,7 +46,6 @@ type Investor = record {
   name : text;
   principal_id : principal;
 };
-type Loan = record { duration : Duration; farmer_id : nat64; amount : nat64 };
 type NewFarmer = record {
   farmer_name : text;
   farm_name : text;
@@ -59,9 +61,8 @@ type NewSupplyAgriBusiness = record {
   items_to_be_supplied : opt vec record { text; nat64 };
 };
 type Result = variant { Ok : Success; Err : Error };
-type Result_1 = variant { Ok : opt Loan; Err : Error };
+type Result_1 = variant { Ok; Err : Error };
 type Result_2 = variant { Ok; Err : text };
-type Result_3 = variant { Ok; Err : Error };
 type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
@@ -87,8 +88,8 @@ type SupplyAgriBusiness = record {
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
   add_farm_to_agribusiness : (NewFarmer, text) -> (Result);
-  apply_for_loan : (nat64, nat64) -> (Result);
   ask_for_loan : (nat64, nat64) -> (Result);
+  check_loan_expiry : (nat64) -> (Result_1);
   delete_farm : (nat64) -> (Result);
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
@@ -102,7 +103,6 @@ service : {
   get_investments_by_investor : (nat64) -> (
       opt vec record { nat64; float64; text; text },
     ) query;
-  get_loan_for_farm : (nat64) -> (Result_1) query;
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
@@ -112,9 +112,9 @@ service : {
   store_investments : (nat64, float64, nat64, text, text) -> (Result_2);
   test_frontend : () -> (text) query;
   uploaded_farmer_report : (text, nat64, text, text) -> (Result);
-  verify_farmer : (nat64, bool) -> (Result_3);
-  verify_farms_agribusiness : (nat64, bool) -> (Result_3);
-  verify_investor : (nat64, bool) -> (Result_3);
-  verify_supply_agribusiness : (nat64, bool) -> (Result_3);
+  verify_farmer : (nat64, bool) -> (Result_1);
+  verify_farms_agribusiness : (nat64, bool) -> (Result_1);
+  verify_investor : (nat64, bool) -> (Result_1);
+  verify_supply_agribusiness : (nat64, bool) -> (Result_1);
   who_am_i : () -> (principal);
 }

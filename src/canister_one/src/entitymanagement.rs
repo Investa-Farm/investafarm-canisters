@@ -8,6 +8,7 @@ use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap };
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager,VirtualMemory};
 use std::collections::HashMap; 
 // use std::collections::BTreeMap;
+use std::time::Duration; 
 
 pub type Memory = VirtualMemory<DefaultMemoryImpl>; 
 // type IdCell = Cell<u64, Memory>; 
@@ -28,7 +29,10 @@ pub struct Farmer {
   pub publish: bool, 
   pub ifarm_tokens: Option<u64>, 
   pub credit_score: Option<u64>, 
-  pub current_loan_ask: Option<u64>
+  pub current_loan_ask: Option<u64>, 
+  pub loaned: bool, 
+  pub loan_maturity: Option<Duration>, 
+  pub time_for_funding_round_to_expire: Option<Duration>
 }
 
 impl Default for Farmer {
@@ -47,7 +51,10 @@ impl Default for Farmer {
          publish: false, 
          ifarm_tokens: None, 
          credit_score: None, 
-         current_loan_ask: None
+         current_loan_ask: None, 
+         loaned: false, 
+         loan_maturity: None, 
+         time_for_funding_round_to_expire: None
         }
     } 
 }
@@ -348,7 +355,10 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
        publish: true, 
        ifarm_tokens: None, 
        credit_score: None, 
-       current_loan_ask: None 
+       current_loan_ask: None, 
+       loaned: false, 
+       loan_maturity: None, 
+       time_for_funding_round_to_expire: None
    }; 
 
    let farmer_clone1 = farmer.clone();
