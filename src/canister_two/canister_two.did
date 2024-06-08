@@ -1,3 +1,0 @@
-type Error = variant { AnErrorOccured : record { msg : text } };
-type Result = variant { Ok : text; Err : Error };
-service : { call_testing_inter_canister : () -> (Result) }

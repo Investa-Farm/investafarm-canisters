@@ -1,4 +1,5 @@
 use candid::{CandidType, Principal, Encode, Decode}; 
+use ic_cdk::{query, update};
 use ic_stable_structures::Storable;
 use serde::{Serialize, Deserialize}; 
 // use std::cell::Ref;
@@ -6,23 +7,32 @@ use std::{borrow::Cow, cell::RefCell};
 use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap }; 
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager,VirtualMemory};
 use std::collections::HashMap; 
+// use std::collections::BTreeMap;
+use std::time::Duration; 
 
-type Memory = VirtualMemory<DefaultMemoryImpl>; 
+pub type Memory = VirtualMemory<DefaultMemoryImpl>; 
 // type IdCell = Cell<u64, Memory>; 
 
 // Farmer Struct 
 #[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Farmer {
-  id: u64, 
-  principal_id: Principal, 
-  farmer_name: String, 
-  farm_name: String, 
-  farm_description: String, 
-  amount_invested: u64, 
-  investors_ids: Principal, 
-  verified: bool, 
-  agri_business: Option<String>, 
-  insured: bool
+  pub id: u64, 
+  pub principal_id: Principal, 
+  pub farmer_name: String, 
+  pub farm_name: String, 
+  pub farm_description: String, 
+  pub amount_invested: Option<u64>, 
+  pub investors_ids: Principal, 
+  pub verified: bool, 
+  pub agri_business: String, 
+  pub insured: Option<bool>, 
+  pub publish: bool, 
+  pub ifarm_tokens: Option<u64>, 
+  pub credit_score: Option<u64>, 
+  pub current_loan_ask: Option<u64>, 
+  pub loaned: bool, 
+  pub loan_maturity: Option<Duration>, 
+  pub time_for_funding_round_to_expire: Option<Duration>
 }
 
 impl Default for Farmer {
@@ -33,28 +43,35 @@ impl Default for Farmer {
          farmer_name: String::new(), 
          farm_name: String::new(), 
          farm_description: String::new(), 
-         amount_invested: 0, 
+         amount_invested: None, 
          investors_ids: Principal::anonymous(), 
          verified: false, 
-         agri_business: None, 
-         insured: false
+         agri_business: String::new(), 
+         insured: None,
+         publish: false, 
+         ifarm_tokens: None, 
+         credit_score: None, 
+         current_loan_ask: None, 
+         loaned: false, 
+         loan_maturity: None, 
+         time_for_funding_round_to_expire: None
         }
     } 
 }
 
 #[derive(CandidType, Serialize, Deserialize)] 
 pub struct NewFarmer {
-    farmer_name: String, 
-    farm_name: String, 
-    farm_description: String
+    pub farmer_name: String, 
+    pub farm_name: String, 
+    pub farm_description: String 
 }
 
 // Investor Struct 
 #[derive(CandidType, Serialize, Deserialize, Clone)] 
 pub struct Investor {
-    id: u64, 
+    pub id: u64, 
     name: String, 
-    verified: bool, 
+    pub verified: bool, 
     principal_id: Principal
 }
 
@@ -77,11 +94,11 @@ pub struct NewInvestor {
 // Supply Agri Business Struct 
 #[derive(CandidType, Serialize, Deserialize, Clone)] 
 pub struct SupplyAgriBusiness {
-    id: u64, 
+    pub id: u64, 
     agribusiness_name: String, 
     items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, 
     // supplied_items: SuppliedItems, 
-    verified: bool, 
+    pub verified: bool, 
     principal_id: Principal    
 } 
 
@@ -116,12 +133,12 @@ pub struct SuppliedItems {
 // Farms Agri Business Struct 
 #[derive(CandidType, Serialize, Deserialize, Clone)]  
 pub struct FarmsAgriBusiness {
-    id: u64, 
-    agribusiness_name: String, 
-    total_farmers: u64, 
-    principal_id: Principal, 
-    verified: bool, 
-    farms: Option<FarmsForAgriBusiness>
+    pub id: u64, 
+    pub agribusiness_name: String, 
+    pub total_farmers: u64, 
+    pub principal_id: Principal, 
+    pub verified: bool, 
+    // pub farms: Option<FarmsForAgriBusiness>
 }
 
 impl Default for FarmsAgriBusiness {
@@ -132,7 +149,7 @@ impl Default for FarmsAgriBusiness {
          total_farmers: 0, 
          verified: false, 
          principal_id: Principal::anonymous(), 
-         farms: None
+        //  farms: None
         }
     }    
 }
@@ -141,11 +158,11 @@ impl Default for FarmsAgriBusiness {
 pub struct NewFarmsAgriBusiness {
     agribusiness_name: String, 
     total_farmers: u64, 
-    farms: Option<FarmsForAgriBusiness>
+    // farms: Option<FarmsForAgriBusiness>
 }
 
-type FarmsForAgriBusiness = HashMap<Farmer, u64>; 
-
+// type FarmsForAgriBusiness = HashMap<Farmer, u64>; 
+// pub type FarmsForAgriBusiness = BTreeMap<u64, Farmer>; 
 
 // Necessary as Internet Computer's architecture requires data to be serialized before it can be stored in stable memory or sent across canisters
 impl Storable for Farmer {
@@ -210,37 +227,42 @@ impl BoundedStorable for FarmsAgriBusiness {
 
 // Thread Local will allow us to achieve interior mutability, a design pattern in Rust that allows you to mutate data even when there are immutable references to that data
 thread_local! {
-    static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
+    pub static MEMORY_MANAGER: RefCell<MemoryManager<DefaultMemoryImpl>> = RefCell::new(
         MemoryManager::init(DefaultMemoryImpl::default())
     ); 
 
-    static FARMER_STORAGE: RefCell<StableBTreeMap<u64, Farmer, Memory>> = 
+    pub static FARMER_STORAGE: RefCell<StableBTreeMap<u64, Farmer, Memory>> = 
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
     )); 
 
-    static INVESTOR_STORAGE: RefCell<StableBTreeMap<u64, Investor, Memory>> = 
+    pub static INVESTOR_STORAGE: RefCell<StableBTreeMap<u64, Investor, Memory>> = 
     RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(2)))
     )); 
 
-    static SUPPLY_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, SupplyAgriBusiness, Memory>> = 
+    pub static SUPPLY_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, SupplyAgriBusiness, Memory>> = 
     RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(3)))
     )); 
 
-    static FARMS_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, FarmsAgriBusiness, Memory>> = 
+    pub static FARMS_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, FarmsAgriBusiness, Memory>> = 
     RefCell::new(StableBTreeMap::init(
-        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(1)))
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(4)))
+    )); 
+
+    pub static FARMS_FOR_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, Farmer, Memory>> = 
+    RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(5)))
     )); 
     
-    static FARMER_ID: RefCell<u64> = RefCell::new(0);
+    pub static FARMER_ID: RefCell<u64> = RefCell::new(0);
 
-    static INVESTOR_ID: RefCell<u64> = RefCell::new(0);
+    static INVESTOR_ID: RefCell<u64> = RefCell::new(1);
 
-    static SUPPLY_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(0);
+    static SUPPLY_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(2);
 
-    static FARMS_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(0);
+    static FARMS_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(3);
     
     // Mapping farmers with their farm names: for ensuring there are no duplicate farm names
     static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
@@ -249,12 +271,11 @@ thread_local! {
     static REGISTERED_INVESTORS: RefCell<HashMap<String, Investor>> = RefCell::new(HashMap::new());
 
     // Mapping supply agri business with their names
-    static REGISTERED_SUPPLY_AGRIBUSINESS: RefCell<HashMap<String, SupplyAgriBusiness>> = RefCell::new(HashMap::new());
+    pub static REGISTERED_SUPPLY_AGRIBUSINESS: RefCell<HashMap<String, SupplyAgriBusiness>> = RefCell::new(HashMap::new());
 
     // Mapping farmer agri business with their names 
-    static REGISTERED_FARMS_AGRIBUSINESS: RefCell<HashMap<String, FarmsAgriBusiness>> = RefCell::new(HashMap::new());
+    pub static REGISTERED_FARMS_AGRIBUSINESS: RefCell<HashMap<String, FarmsAgriBusiness>> = RefCell::new(HashMap::new());
 }
-
 
 // Success Message
 #[derive(CandidType, Deserialize, Serialize)] 
@@ -266,7 +287,12 @@ pub enum Success {
   FarmerLogInSuccesfull { msg: String }, 
   InvestorLogInSuccesfull { msg: String }, 
   SupplyAgriBusinessLogInSuccesfull { msg: String }, 
-  FarmsAgriBusinessLogInSuccesfull { msg: String }
+  FarmsAgriBusinessLogInSuccesfull { msg: String }, 
+  FarmPublishedSuccesfully { msg: String }, 
+  FarmDeletedSuccesfully { msg: String }, 
+  ReportUploadedSuccesfully { msg: String }, 
+  CreditScoreAdded { msg: String }, 
+  AppliedForLoanSuccesfully { msg: String }
 }
 
 // Error Messages 
@@ -275,9 +301,18 @@ pub enum Error {
     FieldEmpty { msg: String }, 
     FarmNameTaken { msg: String }, 
     PrincipalIdAlreadyRegistered { msg: String }, 
-    YouAreNotRegistered { msg: String }
+    YouAreNotRegistered { msg: String }, 
+    NotAuthorized { msg: String }, 
+    ErrorOccured { msg: String }, 
+    Error { msg: String }
 }
 
+// Login function 
+#[update] 
+pub fn who_am_i() -> Principal {
+    let caller = ic_cdk::caller(); 
+    return caller; 
+}
 
 // FUNCTION FOR REGISTERING FARM
 pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
@@ -310,13 +345,20 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
        id, 
        principal_id: new_farmer_principal_id, 
        farm_name: new_farmer.farmer_name.clone(), 
-       farmer_name: new_farmer.farm_name, 
+       farmer_name: new_farmer.farm_name.clone(), 
        farm_description: new_farmer.farm_description, 
-       amount_invested: 0, 
+       amount_invested: None, 
        investors_ids: Principal::anonymous(), 
        verified: false, 
-       agri_business: None, 
-       insured: false
+       agri_business: String::new(), 
+       insured: None, 
+       publish: true, 
+       ifarm_tokens: None, 
+       credit_score: None, 
+       current_loan_ask: None, 
+       loaned: false, 
+       loan_maturity: None, 
+       time_for_funding_round_to_expire: None
    }; 
 
    let farmer_clone1 = farmer.clone();
@@ -335,14 +377,14 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
    
 }
 
-fn _increament_id(id: &RefCell<u64>) -> u64 {
+pub fn _increament_id(id: &RefCell<u64>) -> u64 {
     let mut id_borrowed = id.borrow_mut();
     let new_id = *id_borrowed + 1;
     *id_borrowed = new_id;
     new_id
 }
 
-fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Error> {
+pub fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Error> {
     let mut is_principal_id_registered = false; 
 
     REGISTERED_FARMERS.with(|farmers| {
@@ -364,6 +406,15 @@ fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Error>
     }); 
 
     REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().values() {
+            if agribiz.principal_id == new_principal_id {
+                is_principal_id_registered = true; 
+                break; 
+            }
+        }
+    }); 
+
+    REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
         for agribiz in agribusiness.borrow().values() {
             if agribiz.principal_id == new_principal_id {
                 is_principal_id_registered = true; 
@@ -417,7 +468,6 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
    }); 
 
    Ok(Success::InvestorRegisteredSuccesfully { msg: format!("Investor has been registered succesfully") })
-
 }
 
 // FUNCTION FOR REGISTERING SUPPLY AGRI BUSINESS 
@@ -480,12 +530,12 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
     let id = FARMS_AGRIBUSINESS_ID.with(|id| _increament_id(id)); 
 
     let farms_agri_business = FarmsAgriBusiness {
-        id: 0, 
+        id, 
         agribusiness_name: new_farms_agribusiness.agribusiness_name,  
         verified: false, 
         principal_id: new_farms_agribusiness_principal_id, 
         total_farmers: new_farms_agribusiness.total_farmers, 
-        farms: new_farms_agribusiness.farms
+        // farms: new_farms_agribusiness.farms
     }; 
 
     let farms_agri_business_clone1 = farms_agri_business.clone(); 
@@ -524,36 +574,57 @@ pub fn return_farms_agribusiness() -> Vec<FarmsAgriBusiness> {
 }
 
 // FUNCTION FOR LOGGIN INTO THE SITE
-// pub fn log_in() -> Result<Success, Error> {
-//     let principal_id = ic_cdk::caller(); 
+#[query]
+pub fn log_in() -> Result<Success, Error> {
+    let principal_id = ic_cdk::caller(); 
 
-//     let result = REGISTERED_FARMERS.with(|farmers| {
-//         for farmer in farmers.borrow().values() {
-//             if farmer.principal_id == principal_id {
-//                 return Ok(Success::FarmerLogInSuccesfull { msg: format!("You've logged in as a farmer succesfully") });
-//             }
-//         }
-//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
-//     }); 
+    let result = REGISTERED_FARMERS.with(|farmers| {
+        for farmer in farmers.borrow().values() {
+            if farmer.principal_id == principal_id {
+                return Ok(Success::FarmerLogInSuccesfull { msg: format!("You've logged in as a farmer succesfully") });
+            }
+        }
+        Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
+    }); 
 
-//     let result = REGISTERED_INVESTORS.with(|investors| {
-//         for investor in investors.borrow().values() {
-//             if investor.principal_id == principal_id {
-//                 return Ok(Success::InvestorLogInSuccesfull { msg: format!("You've logged in as an Investor succesfully") });
-//             }
-//         }
-//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
-//     }); 
+    if let Ok(res) = result {
+        return Ok(res);
+    }
 
-//     let result = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
-//         for agribiz in agribusiness.borrow().values() {
-//             if agribusiness.principal_id == principal_id {
-//                 return Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("You've logged in as an Investor succesfully") });
-//             }
-//         }
-//         Err(Error::YouAreNotRegistered { msg: format!("Kindly register before loggin in") })
-//     }); 
+    let result = REGISTERED_INVESTORS.with(|investors| {
+        for investor in investors.borrow().values() {
+            if investor.principal_id == principal_id {
+                return Ok(Success::InvestorLogInSuccesfull { msg: format!("You've logged in as an Investor succesfully") });
+            }
+        }
+        Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
+    }); 
 
-//     result
-    
-// }
+    if let Ok(res) = result {
+        return Ok(res);
+    }
+
+    let result = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().values() {
+            if agribiz.principal_id == principal_id {
+                return Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("You've logged in as an Investor succesfully") });
+            }
+        }
+        Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
+    }); 
+
+    if let Ok(res) = result {
+        return Ok(res);
+    }
+
+    let result = REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().values() {
+            if agribiz.principal_id == principal_id {
+                return Ok(Success::FarmsAgriBizRegisteredSuccesfully { msg: format!("You've logged in as an Investor succesfully") });
+            }
+        }
+        Err(Error::YouAreNotRegistered { msg: format!("You are not registered!") })
+    }); 
+   
+   result 
+}
