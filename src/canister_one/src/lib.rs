@@ -1,6 +1,25 @@
 use ic_cdk::{query, update}; 
+use crate::entitymanagement::Error; 
+use crate::entitymanagement::Success; 
+use crate::farmerfiles::FarmerReport; 
+// use crate::entitymanagement::Farmer; 
+// use ic_ledger_types::BlockIndex; 
+// use crate::icpledger::TransferArgs;
+use candid::Principal; 
 
 mod entitymanagement;
+mod adminapproval;
+mod payments;
+mod farmsagribizmanagement;
+mod farmerfiles;
+mod creditscore;
+mod askforloan;
+
+// Frontend Intergration Testing 
+#[query]
+fn test_frontend() -> String {
+    return "Investa Farm Canisters!".to_string()
+}
 
 // REGISTER FARMS 
 #[update]
@@ -49,5 +68,9 @@ fn display_supply_agribusinesses() -> Vec<entitymanagement::SupplyAgriBusiness> 
 fn display_farms_agribusinesses() -> Vec<entitymanagement::FarmsAgriBusiness> {
     entitymanagement::return_farms_agribusiness()
 }
+
+// fn display_test_ledger() -> Result<String, payments::Error> {
+//     payments::test_ledger()
+// }
 
 ic_cdk::export_candid!(); 

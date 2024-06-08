@@ -5,16 +5,11 @@
       "package": "canister_one",
       "type": "rust"
     }, 
-    "canister_two": {
-      "candid": "src/canister_two/canister_two.did",
-      "package": "canister_two",
-      "type": "rust"
-    }, 
     "canister_three": {
       "candid": "src/canister_three/canister_three.did",
       "package": "canister_three",
       "type": "rust"
-    } 
+    }
   },
   "defaults": {
     "build": {
