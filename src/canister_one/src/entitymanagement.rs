@@ -845,27 +845,16 @@ pub fn register_supply_agribusiness(new_supply_agribusiness: NewSupplyAgriBusine
         principal_id: new_supply_agribusiness_principal_id
     }; 
 
-    //let supply_agri_business_clone1 = supply_agri_business.clone(); 
-    //let supply_agri_business_clone2 = supply_agri_business.clone(); 
+    let supply_agri_business_clone1 = supply_agri_business.clone(); 
+    let supply_agri_business_clone2 = supply_agri_business.clone(); 
 
     // Mapping the agri business name 
-    //REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
-    //    agribusiness.borrow_mut().insert(supply_agri_business.agribusiness_name, supply_agri_business_clone1)
-    //}); 
-
-    //SUPPLY_AGRIBUSINESS_STORAGE.with(|supplyagribusiness| {
-    //    supplyagribusiness.borrow_mut().insert(id, supply_agri_business_clone2)
-    //}); 
-
-    //suggestion
-    // Map the agribusiness name
     REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
-        agribusiness.borrow_mut().insert(supply_agri_business.agribusiness_name.clone(), supply_agri_business);
-    });
+        agribusiness.borrow_mut().insert(supply_agri_business.agribusiness_name, supply_agri_business_clone1)
+    }); 
 
-    // Store the supply agribusiness instance
     SUPPLY_AGRIBUSINESS_STORAGE.with(|supplyagribusiness| {
-        supplyagribusiness.borrow_mut().insert(id, supply_agri_business);
+        supplyagribusiness.borrow_mut().insert(id, supply_agri_business_clone2)
     });
 
     Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("Supply Agri Business has been registered succesfully") })
