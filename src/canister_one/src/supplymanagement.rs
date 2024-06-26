@@ -42,8 +42,7 @@ pub fn create_order(new_order: NewOrder, supply_agribusiness: &mut SupplyAgriBus
 *   - supply_agribusiness: &mut SupplyAgriBusiness - Mutable reference to the supply agribusiness.
 * @return bool - Indicates if the status update was successful.
 */
-pub fn update_order_status(order_id: u64, new_status: OrderStatus, supply_agribusiness: &mut SupplyAgriBusiness) -> bool {
-    // Iterate through orders and find the order with matching order_id
+pub fn update_order_status(order_id: u64, new_status: bool, supply_agribusiness: &mut SupplyAgriBusiness) -> bool {
     for order in &mut supply_agribusiness.orders {
         if order.order_id == order_id {
             order.status = new_status;

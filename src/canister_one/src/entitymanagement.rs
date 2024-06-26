@@ -36,7 +36,7 @@ pub struct Farmer {
   pub farmer_name: String, //Name of the farmer.
   pub farm_name: String, //Name of the farm.
   pub farm_description: String, //Description of the farm.
-  pub farm_assets: HashMap<String, (u64,u64)>, // Maps supply item names to their quantities
+  pub farm_assets: Vec<(String, (u64, u64))>, // Maps supply item names to their quantities
   pub amount_invested: Option<u64>, // Amount Invested into the farm.
   pub investors_ids: Principal, //Principle IDs of Investors.
   pub verified: bool, //verification status.
@@ -68,7 +68,7 @@ impl Default for Farmer {
          farm_name: String::new(), 
          farm_description: String::new(), 
          amount_invested: None, 
-         farm_assets: None,
+         farm_assets: Vec::new(),
          investors_ids: Principal::anonymous(), 
          verified: false, 
          agri_business: String::new(), 
@@ -192,7 +192,7 @@ pub struct NewSupplyAgriBusiness {
 /**
 * Type alias for items to be supplied by an agricultural business.
 */
-type AgribusinessItemsToBeSupplied = HashMap<String, (u64, u64)>; 
+type AgribusinessItemsToBeSupplied = Vec<(String, (u64, u64))>; 
 
 /**
 * SuppliedItems Struct
@@ -207,6 +207,19 @@ pub struct SuppliedItems {
    price: u64 // Price in I-Farm Tokens
 }
 
+
+/**
+* OrderStatus
+* Enum for the status of an order.
+*/
+#[derive(Default, Debug, Serialize, Deserialize)]
+pub enum OrderStatus {
+    #[default]
+    Pending,
+    Complete,
+    Cancelled,
+}
+
 /**
 * Order Struct
 * Represents a Order to the supply agribusiness.
@@ -215,13 +228,13 @@ pub struct SuppliedItems {
 */
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct Order {
-    pub principle_id: Principal,
+    pub principal_id: Principal,
     pub order_id: u64,
     pub farmer_id: u64,
     pub supply_agribusiness_id: u64,
     pub items: HashMap<String, (u64,u64)>, // item_name -> amount
     pub total_price: u64,
-    pub status: OrderStatus,
+    pub status: bool
 }
 
 /**
@@ -240,7 +253,7 @@ impl Default for Order {
             supply_agribusiness_id: 0,
             items: HashMap::new(),
             total_price: 0,
-            status: OrderStatus::Pending,
+            status: false
         }
     }
 }
@@ -256,19 +269,7 @@ pub struct NewOrder {
     pub farmer_id: u64,
     pub supply_agribusiness_id: u64,
     pub items: HashMap<String, (u64,u64)>, // item_name -> amount
-    pub total_price:  u64,
-    pub status: OrderStatus::Pending
-}
-
-/**
-* OrderStatus
-* Enum for the status of an order.
-*/
-#[derive(Debug, Clone)]
-pub enum OrderStatus {
-    Pending,
-    Complete,
-    Cancelled,
+    pub total_price:  u64
 }
 
 
@@ -928,7 +929,7 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
 * @param supply_agribusiness_id: u64, items: Vec<SupplyItem>
 * @return type: Result<Success, Error>
 */
-pub fn add_supply_items(supply_agribusiness_id: u64, items: Vec<String, u64, u64>) -> Result<Success, Error> {
+pub fn add_supply_items(supply_agribusiness_id: u64, items: Vec<(String, (u64, u64))>) -> Result<Success, Error> {
     SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| {
         let mut storage = storage.borrow_mut();
         if let Some(supply_agribusiness) = storage.get_mut(&supply_agribusiness_id) {
