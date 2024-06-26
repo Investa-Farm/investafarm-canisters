@@ -1,5 +1,6 @@
 type Duration = record { secs : nat64; nanos : nat32 };
 type Error = variant {
+  ItemsNotEmpty : record { msg : text };
   Error : record { msg : text };
   FieldEmpty : record { msg : text };
   YouAreNotRegistered : record { msg : text };
@@ -7,12 +8,14 @@ type Error = variant {
   PrincipalIdAlreadyRegistered : record { msg : text };
   NotAuthorized : record { msg : text };
   FarmNameTaken : record { msg : text };
+  AgribusinessNotFound : record { msg : text };
 };
 type Farmer = record {
   id : nat64;
   agri_business : text;
   verified : bool;
   current_loan_ask : opt nat64;
+  farm_assets : opt vec record { text; record { nat64; nat64 } };
   loaned : bool;
   amount_invested : opt nat64;
   time_for_funding_round_to_expire : opt Duration;
@@ -58,7 +61,7 @@ type NewFarmsAgriBusiness = record {
 type NewInvestor = record { name : text };
 type NewSupplyAgriBusiness = record {
   agribusiness_name : text;
-  items_to_be_supplied : opt vec record { text; nat64 };
+  items_to_be_supplied : opt vec record { text; record { nat64; nat64 } };
 };
 type Result = variant { Ok : Success; Err : Error };
 type Result_1 = variant { Ok; Err : Error };
@@ -67,6 +70,7 @@ type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
   SupplyAgriBusinessLogInSuccesfull : record { msg : text };
+  ItemsAdded : record { msg : text };
   FarmsAgriBizRegisteredSuccesfully : record { msg : text };
   SupplyAgriBizRegisteredSuccesfully : record { msg : text };
   FarmerLogInSuccesfull : record { msg : text };
@@ -82,12 +86,15 @@ type SupplyAgriBusiness = record {
   id : nat64;
   verified : bool;
   agribusiness_name : text;
-  items_to_be_supplied : opt vec record { text; nat64 };
+  items_to_be_supplied : opt vec record { text; record { nat64; nat64 } };
   principal_id : principal;
 };
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
   add_farm_to_agribusiness : (NewFarmer, text) -> (Result);
+  add_supply_items : (nat64, vec record { text; record { nat64; nat64 } }) -> (
+      Result,
+    );
   ask_for_loan : (nat64, nat64) -> (Result);
   check_loan_expiry : (nat64) -> (Result_1);
   delete_farm : (nat64) -> (Result);

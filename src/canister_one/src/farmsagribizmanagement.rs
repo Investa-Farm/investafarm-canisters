@@ -23,6 +23,7 @@ fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusines
             farmer_name: new_farmer.farmer_name,
             farm_name: new_farmer.farm_name,
             farm_description: new_farmer.farm_description,
+            farm_assets: None,
             amount_invested: None,
             investors_ids: Principal::anonymous(),
             verified: true,
