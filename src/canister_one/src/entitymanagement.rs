@@ -36,6 +36,7 @@ pub struct Farmer {
   pub farmer_name: String, //Name of the farmer.
   pub farm_name: String, //Name of the farm.
   pub farm_description: String, //Description of the farm.
+  pub farm_assets: HashMap<String, u32>, // Maps supply item names to their quantities
   pub amount_invested: Option<u64>, // Amount Invested into the farm.
   pub investors_ids: Principal, //Principle IDs of Investors.
   pub verified: bool, //verification status.
@@ -67,6 +68,7 @@ impl Default for Farmer {
          farm_name: String::new(), 
          farm_description: String::new(), 
          amount_invested: None, 
+         farm_assets: None,
          investors_ids: Principal::anonymous(), 
          verified: false, 
          agri_business: String::new(), 
@@ -150,7 +152,7 @@ pub struct SupplyAgriBusiness {
     pub id: u64, //Unique identifier for the business.
     agribusiness_name: String, //Name of the agricultural business.
     items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business
-    // supplied_items: SuppliedItems, 
+    //supplied_items: Option<SuppliedItems>, 
     pub verified: bool, //Indicates if the business is verified.
     principal_id: Principal //ID associated with the business's principal.
 } 
@@ -190,7 +192,7 @@ pub struct NewSupplyAgriBusiness {
 /**
 * Type alias for items to be supplied by an agricultural business.
 */
-type AgribusinessItemsToBeSupplied = HashMap<String, u64>; 
+type AgribusinessItemsToBeSupplied = HashMap<String, u64, u64>; 
 
 /**
 * SuppliedItems Struct
@@ -201,8 +203,74 @@ type AgribusinessItemsToBeSupplied = HashMap<String, u64>;
 pub struct SuppliedItems {
    principal_id: Principal, //ID associated with the principal of the item.
    item_name: String, //Name of the item supplied.
-   amount: u64 //Amount of the item supplied.
+   amount: u64, //Amount of the item supplied.
+   price: u64 // Price in I-Farm Tokens
 }
+
+/**
+* Order Struct
+* Represents a Order to the supply agribusiness.
+* @param Defined In-Line
+* @return Order instance
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone)]
+pub struct Order {
+    pub principle_id: Principal,
+    pub order_id: u64,
+    pub farmer_id: u64,
+    pub supply_agribusiness_id: u64,
+    pub items: HashMap<String, u32>, // item_name -> amount
+    pub total_price: u64,
+    pub status: OrderStatus,
+}
+
+/**
+* Default Implementation for Order [Constructor]
+* Provides a default implementation for the Order struct.
+* Sets default values for all fields.
+* @param None
+* @return Order instance with default values.
+*/
+impl Default for Order {
+    fn default() -> Self {
+        Order {
+            principal_id: Principal::anonymous(),
+            order_id: 0,
+            farmer_id: 0,
+            supply_agribusiness_id: 0,
+            items: HashMap::new(),
+            total_price: 0,
+            status: OrderStatus::Pending,
+        }
+    }
+}
+
+/**
+* NewOrder Struct
+* Represents the initial information required to create a new order.
+* @param Defined In-Line
+* @return NewOrder instance with the specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone)]
+pub struct NewOrder {
+    pub farmer_id: u64,
+    pub supply_agribusiness_id: u64,
+    pub items: HashMap<String, u64,u64>, // item_name -> amount
+    pub total_price:  u64,
+    pub status: OrderStatus::Pending
+}
+
+/**
+* OrderStatus
+* Enum for the status of an order.
+*/
+#[derive(Debug, Clone)]
+pub enum OrderStatus {
+    Pending,
+    Complete,
+    Cancelled,
+}
+
 
 /**
 * FarmsAgriBusiness Struct
@@ -311,6 +379,16 @@ impl Storable for FarmsAgriBusiness {
     }       
 }
 
+impl Storable for Order {
+    fn to_bytes(&self) -> Cow<[u8]> {
+        Cow::Owned(Encode!(self).unwrap())
+    }     
+ 
+    fn from_bytes(bytes: Cow<[u8]>) -> Self {
+        Decode!(bytes.as_ref(), Self).unwrap()
+    }       
+}
+
 /**
 * Implementation of BoundedStorable for Farmer
 * Specifies the storage constraints for the Farmer struct when used in a stable data structure.
@@ -332,7 +410,7 @@ impl BoundedStorable for Investor {
 }
 
 /**
-* Implementation of SupplyAgriBusiness for Farmer
+* Implementation of BoundedStorable for SupplyAgriBusiness
 * Specifies the storage constraints for the SupplyAgriBusiness struct when used in a stable data structure.
 * Provides information on the maximum size and whether the size is fixed.
 */
@@ -342,7 +420,7 @@ impl BoundedStorable for SupplyAgriBusiness {
 }
 
 /**
-* Implementation of FarmsAgriBusiness for Farmer
+* Implementation of BoundedStorable for FarmsAgriBusiness
 * Specifies the storage constraints for the FarmsAgriBusiness struct when used in a stable data structure.
 * Provides information on the maximum size and whether the size is fixed.
 */
@@ -350,6 +428,17 @@ impl BoundedStorable for FarmsAgriBusiness {
     const MAX_SIZE: u32 = 1024; // State of whether the size of a FarmsAgriBusiness Struct is fixed.
     const IS_FIXED_SIZE: bool = false; //maximum size (in bytes) that a FarmsAgriBusiness instance can occupy.
 }
+
+/**
+* Implementation of BoundedStorable for Order 
+* Specifies the storage constraints for the Order struct when used in a stable data structure.
+* Provides information on the maximum size and whether the size is fixed.
+*/
+impl BoundedStorable for Order {
+    const MAX_SIZE: u32 = 1024; // State of whether the size of an Order Struct is fixed.
+    const IS_FIXED_SIZE: bool = false; //maximum size (in bytes) that an Order instance can occupy.
+}
+
 
 // Thread Local will allow us to achieve interior mutability, a design pattern in Rust that allows you to mutate data even when there are immutable references to that data
 thread_local! {
@@ -423,6 +512,18 @@ thread_local! {
     pub static FARMS_FOR_AGRIBUSINESS_STORAGE: RefCell<StableBTreeMap<u64, Farmer, Memory>> = 
     RefCell::new(StableBTreeMap::init(
         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(5)))
+    )); 
+
+    /**
+    * ORDER_STORAGE
+    * Stores Order instances in a `StableBTreeMap` using memory managed by the MEMORY_MANAGER.
+    * Uses `RefCell` to allow mutable access.
+    *@param None
+    *@return A thread-local `RefCell` containing the `StableBTreeMap` for the Order instances.
+    */
+    pub static ORDER_STORAGE: RefCell<StableBTreeMap<u64, Order, Memory>> = 
+    RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(6)))
     )); 
     
     //Stores the current Farmer ID.
@@ -819,6 +920,27 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
     }); 
 
     Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("Supply Agri Business has been registered succesfully") })
+}
+
+/**
+* add_supply_items
+* Adds supply items to a supply agribusiness if empty.
+* @param supply_agribusiness_id: u64, items: Vec<SupplyItem>
+* @return type: Result<Success, Error>
+*/
+pub fn add_supply_items(supply_agribusiness_id: u64, items: Vec<String, u64, u64>) -> Result<Success, Error> {
+    SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        if let Some(supply_agribusiness) = storage.get_mut(&supply_agribusiness_id) {
+            if supply_agribusiness.items.is_empty() {
+                supply_agribusiness.items = items;
+                return Ok(Success::ItemsAdded { msg: "Supply items added successfully.".to_string() });
+            } else {
+                return Err(Error::ItemsNotEmpty { msg: "Supply items already exist.".to_string() });
+            }
+        }
+        Err(Error::AgribusinessNotFound { msg: "Supply agribusiness not found.".to_string() })
+    })
 }
 
 /**
