@@ -899,25 +899,19 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
 pub fn add_supply_items(supply_agribusiness_id: u64, items: Vec<(String, (u64, u64))>) -> Result<Success, Error> {
     SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| {
         let mut storage = storage.borrow_mut();
-        
-        // Use entry() method to access or insert into the BTreeMap
-        match storage.get_mut().entry(supply_agribusiness_id) {
-            // If the entry exists
-            Some(entry) => {
-                let supply_agribusiness = entry;
-                
-                // Check if items is empty
-                if supply_agribusiness.items.is_empty() {
-                    supply_agribusiness.items = items;
-                    return Ok(Success::ItemsAdded { msg: "Supply items added successfully.".to_string() });
-                } else {
-                    return Err(Error::ItemsNotEmpty { msg: "Supply items already exist.".to_string() });
-                }
+
+        if let Some(supply_agribusiness) = storage.get(&supply_agribusiness_id) {
+            let mut supply_agribusiness = supply_agribusiness.clone();
+            
+            if supply_agribusiness.items_to_be_supplied.is_none() {
+                supply_agribusiness.items_to_be_supplied = Some(items);
+                storage.insert(supply_agribusiness_id, supply_agribusiness);
+                return Ok(Success::ItemsAdded { msg: "Supply items added successfully.".to_string() });
+            } else {
+                return Err(Error::ItemsNotEmpty { msg: "Supply items already exist.".to_string() });
             }
-            // If the entry does not exist
-            None => {
-                Err(Error::AgribusinessNotFound { msg: "Supply agribusiness not found.".to_string() })
-            }
+        } else {
+            return Err(Error::AgribusinessNotFound { msg: "Supply agribusiness not found.".to_string() });
         }
     })
 }
