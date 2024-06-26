@@ -567,13 +567,16 @@ pub enum Success {
   FarmDeletedSuccesfully { msg: String }, 
   ReportUploadedSuccesfully { msg: String }, 
   CreditScoreAdded { msg: String }, 
-  AppliedForLoanSuccesfully { msg: String }
+  AppliedForLoanSuccesfully { msg: String },
+  ItemsAdded { msg: String }
 }
 
 // Error Messages 
 #[derive(CandidType, Deserialize, Serialize)] 
 pub enum Error {
-    FieldEmpty { msg: String }, 
+    FieldEmpty { msg: String },
+    ItemsNotEmpty { msg: String },
+    AgribusinessNotFound { msg: String }, 
     FarmNameTaken { msg: String }, 
     PrincipalIdAlreadyRegistered { msg: String }, 
     YouAreNotRegistered { msg: String }, 
@@ -661,27 +664,17 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
    }; 
 
    //Is this cloning necessary. Seems expensive.
-        //let farmer_clone1 = farmer.clone();
-        //let farmer_clone2 = farmer.clone(); 
+        let farmer_clone1 = farmer.clone();
+        let farmer_clone2 = farmer.clone(); 
 
    // Mapping farmer name
-        //REGISTERED_FARMERS.with(|farmers| {
-        //    farmers.borrow_mut().insert(farmer.farm_name.clone(), farmer_clone1)
-        //}); 
+        REGISTERED_FARMERS.with(|farmers| {
+            farmers.borrow_mut().insert(farmer.farm_name.clone(), farmer_clone1)
+        }); 
 
-        //FARMER_STORAGE.with(|farmers| {
-        //    farmers.borrow_mut().insert(id, farmer_clone2)
-        //}); 
-
-    //Suggestion: Insert Farmer Directly
-    REGISTERED_FARMERS.with(|farmers| {
-        farmers.borrow_mut().insert(new_farmer.farm_name.clone(), farmer);
-    });
-
-    // Store the farmer instance
-    FARMER_STORAGE.with(|farmers| {
-        farmers.borrow_mut().insert(id, farmer);
-    });
+        FARMER_STORAGE.with(|farmers| {
+            farmers.borrow_mut().insert(id, farmer_clone2)
+        }); 
 
    Ok(Success::FarmCreatedSuccesfully { msg: format!("Farm has been created succesfully") })
    
