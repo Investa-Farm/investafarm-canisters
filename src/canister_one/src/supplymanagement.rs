@@ -1,4 +1,4 @@
-use ic_cdk::update;
+use ic_cdk::{query, update};
 use std::collections::HashMap;
 use crate::entitymanagement::{self, NewOrder, OrderStatus, SupplyAgriBusiness};
 
@@ -10,6 +10,7 @@ use crate::entitymanagement::{self, NewOrder, OrderStatus, SupplyAgriBusiness};
 *   - supply_agribusiness: &mut SupplyAgriBusiness - Mutable reference to the supply agribusiness.
 * @return bool - Indicates if the order creation was successful.
 */
+#[update]
 pub fn create_order(new_order: NewOrder, supply_agribusiness: &mut SupplyAgriBusiness) -> bool {
     // Check if the item exists in supply_items and get its availability and price
     if let Some((available_amount, item_price)) = supply_agribusiness.supply_items.get_mut(&new_order.item_name) {
@@ -42,6 +43,7 @@ pub fn create_order(new_order: NewOrder, supply_agribusiness: &mut SupplyAgriBus
 *   - supply_agribusiness: &mut SupplyAgriBusiness - Mutable reference to the supply agribusiness.
 * @return bool - Indicates if the status update was successful.
 */
+#[update] 
 pub fn update_order_status(order_id: u64, new_status: bool, supply_agribusiness: &mut SupplyAgriBusiness) -> bool {
     for order in &mut supply_agribusiness.orders {
         if order.order_id == order_id {
@@ -59,6 +61,7 @@ pub fn update_order_status(order_id: u64, new_status: bool, supply_agribusiness:
 *   - supply_agribusiness: &SupplyAgriBusiness - Reference to the supply agribusiness.
 * @return Vec<&NewOrder> - Vector of references to orders associated with the supply agribusiness.
 */
+#[query] 
 pub fn list_orders_by_agribusiness(supply_agribusiness: &SupplyAgriBusiness) -> Vec<&NewOrder> {
     supply_agribusiness.orders.iter().collect()
 }
@@ -71,6 +74,7 @@ pub fn list_orders_by_agribusiness(supply_agribusiness: &SupplyAgriBusiness) -> 
 *   - supply_agribusinesses: &[SupplyAgriBusiness] - Slice of supply agribusinesses to search for orders.
 * @return Vec<&NewOrder> - Vector of references to orders sent by the farmer across all agribusinesses.
 */
+#[query] 
 pub fn list_farmer_sent_orders(farmer_id: u64, supply_agribusinesses: &[SupplyAgriBusiness]) -> Vec<&NewOrder> {
     let mut farmer_orders: Vec<&NewOrder> = Vec::new();
 
@@ -83,3 +87,4 @@ pub fn list_farmer_sent_orders(farmer_id: u64, supply_agribusinesses: &[SupplyAg
             }
         }
     }
+}

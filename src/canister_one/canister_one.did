@@ -92,6 +92,9 @@ type SupplyAgriBusiness = record {
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
   add_farm_to_agribusiness : (NewFarmer, text) -> (Result);
+  add_supply_items : (nat64, vec record { text; record { nat64; nat64 } }) -> (
+      Result,
+    );
   ask_for_loan : (nat64, nat64) -> (Result);
   check_loan_expiry : (nat64) -> (Result_1);
   delete_farm : (nat64) -> (Result);

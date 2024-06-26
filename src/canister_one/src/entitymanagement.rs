@@ -896,6 +896,7 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
 * @param supply_agribusiness_id: u64, items: Vec<SupplyItem>
 * @return type: Result<Success, Error>
 */
+#[update]
 pub fn add_supply_items(supply_agribusiness_id: u64, items: Vec<(String, (u64, u64))>) -> Result<Success, Error> {
     SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| {
         let mut storage = storage.borrow_mut();
