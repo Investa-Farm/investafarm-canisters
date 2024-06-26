@@ -36,7 +36,7 @@ pub struct Farmer {
   pub farmer_name: String, //Name of the farmer.
   pub farm_name: String, //Name of the farm.
   pub farm_description: String, //Description of the farm.
-  pub farm_assets: Vec<(String, (u64, u64))>, // Maps supply item names to their quantities
+  pub farm_assets: Option<Vec<(String, (u64, u64))>>, // Maps supply item names to their quantities
   pub amount_invested: Option<u64>, // Amount Invested into the farm.
   pub investors_ids: Principal, //Principle IDs of Investors.
   pub verified: bool, //verification status.
@@ -68,7 +68,7 @@ impl Default for Farmer {
          farm_name: String::new(), 
          farm_description: String::new(), 
          amount_invested: None, 
-         farm_assets: Vec::new(),
+         farm_assets: None,
          investors_ids: Principal::anonymous(), 
          verified: false, 
          agri_business: String::new(), 
@@ -622,9 +622,14 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
 
    // Checking whether the farm name is taken
    let farm_name = &new_farmer.farm_name;
-   if REGISTERED_FARMERS.borrow().contains_key(farm_name) {
-       return Err(Error::FarmNameTaken { msg: format!("The farm name '{}' is already taken!", farm_name) });
-   }
+   REGISTERED_FARMERS.with(|farmers| {
+        if farmers.borrow().contains_key(farm_name) {
+            return Err(Error::FarmNameTaken {
+                msg: format!("The farm name '{}' is already taken!", farm_name),
+            });
+        }
+        Ok(()) // or continue with your logic
+    });
 
    // Check if principal ID is already registered 
    let new_farmer_principal_id = ic_cdk::caller(); 
@@ -640,6 +645,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error>{
        farm_name: new_farmer.farmer_name.clone(), 
        farmer_name: new_farmer.farm_name.clone(), 
        farm_description: new_farmer.farm_description, 
+       farm_assets: None,
        amount_invested: None, 
        investors_ids: Principal::anonymous(), 
        verified: false, 
@@ -898,27 +904,17 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
         // farms: new_farms_agribusiness.farms
     }; 
 
-    //let farms_agri_business_clone1 = farms_agri_business.clone(); 
-    //let farms_agri_business_clone2 = farms_agri_business.clone(); 
+    let farms_agri_business_clone1 = farms_agri_business.clone(); 
+    let farms_agri_business_clone2 = farms_agri_business.clone(); 
 
-    // Mapping the agri business name 
-    //REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
-    //    agribusiness.borrow_mut().insert(farms_agri_business.agribusiness_name, farms_agri_business_clone1)
-    //}); 
-
-    //FARMS_AGRIBUSINESS_STORAGE.with(|supplyagribusiness| {
-    //    supplyagribusiness.borrow_mut().insert(id, farms_agri_business_clone2)
-    //}); 
-
-    //suggestion
-    // Mapping the agri business name 
+    //Mapping the agri business name 
     REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
-        agribusiness.borrow_mut().insert(farms_agri_business.agribusiness_name, farms_agri_business)
+        agribusiness.borrow_mut().insert(farms_agri_business.agribusiness_name, farms_agri_business_clone1)
     }); 
 
     FARMS_AGRIBUSINESS_STORAGE.with(|supplyagribusiness| {
-        supplyagribusiness.borrow_mut().insert(id, farms_agri_business)
-    }); 
+        supplyagribusiness.borrow_mut().insert(id, farms_agri_business_clone2)
+    });
 
     Ok(Success::SupplyAgriBizRegisteredSuccesfully { msg: format!("Supply Agri Business has been registered succesfully") })
 }
@@ -932,15 +928,26 @@ pub fn register_farms_agribusiness(new_farms_agribusiness: NewFarmsAgriBusiness)
 pub fn add_supply_items(supply_agribusiness_id: u64, items: Vec<(String, (u64, u64))>) -> Result<Success, Error> {
     SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| {
         let mut storage = storage.borrow_mut();
-        if let Some(supply_agribusiness) = storage.get_mut(&supply_agribusiness_id) {
-            if supply_agribusiness.items.is_empty() {
-                supply_agribusiness.items = items;
-                return Ok(Success::ItemsAdded { msg: "Supply items added successfully.".to_string() });
-            } else {
-                return Err(Error::ItemsNotEmpty { msg: "Supply items already exist.".to_string() });
+        
+        // Use entry() method to access or insert into the BTreeMap
+        match storage.get_mut().entry(supply_agribusiness_id) {
+            // If the entry exists
+            Some(entry) => {
+                let supply_agribusiness = entry;
+                
+                // Check if items is empty
+                if supply_agribusiness.items.is_empty() {
+                    supply_agribusiness.items = items;
+                    return Ok(Success::ItemsAdded { msg: "Supply items added successfully.".to_string() });
+                } else {
+                    return Err(Error::ItemsNotEmpty { msg: "Supply items already exist.".to_string() });
+                }
+            }
+            // If the entry does not exist
+            None => {
+                Err(Error::AgribusinessNotFound { msg: "Supply agribusiness not found.".to_string() })
             }
         }
-        Err(Error::AgribusinessNotFound { msg: "Supply agribusiness not found.".to_string() })
     })
 }
 
