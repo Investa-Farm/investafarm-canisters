@@ -786,28 +786,17 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
         verified: false
     }; 
 
-   //let investor_clone1 = investor.clone();
-   //let investor_clone2 = investor.clone(); 
+   let investor_clone1 = investor.clone();
+   let investor_clone2 = investor.clone(); 
 
    // Mapping investor name
-   //REGISTERED_INVESTORS.with(|investors| {
-    //investors.borrow_mut().insert(investor.name, investor_clone1)
-   //}); 
+   REGISTERED_INVESTORS.with(|investors| {
+    investors.borrow_mut().insert(investor.name, investor_clone1)
+   }); 
 
-   //INVESTOR_STORAGE.with(|investors| {
-   //   investors.borrow_mut().insert(id, investor_clone2)
-   //}); 
-
-   //suggestion
-   // Map investor name
-    REGISTERED_INVESTORS.with(|investors| {
-        investors.borrow_mut().insert(investor.name.clone(), investor);
-    });
-
-    // Store the investor instance
-    INVESTOR_STORAGE.with(|investors| {
-        investors.borrow_mut().insert(id, investor);
-    });
+   INVESTOR_STORAGE.with(|investors| {
+      investors.borrow_mut().insert(id, investor_clone2)
+   }); 
 
 
    Ok(Success::InvestorRegisteredSuccesfully { msg: format!("Investor has been registered succesfully") })
