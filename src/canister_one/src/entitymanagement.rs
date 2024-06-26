@@ -36,7 +36,7 @@ pub struct Farmer {
   pub farmer_name: String, //Name of the farmer.
   pub farm_name: String, //Name of the farm.
   pub farm_description: String, //Description of the farm.
-  pub farm_assets: HashMap<String, u32>, // Maps supply item names to their quantities
+  pub farm_assets: HashMap<String, (u64,u64)>, // Maps supply item names to their quantities
   pub amount_invested: Option<u64>, // Amount Invested into the farm.
   pub investors_ids: Principal, //Principle IDs of Investors.
   pub verified: bool, //verification status.
@@ -192,7 +192,7 @@ pub struct NewSupplyAgriBusiness {
 /**
 * Type alias for items to be supplied by an agricultural business.
 */
-type AgribusinessItemsToBeSupplied = HashMap<String, u64, u64>; 
+type AgribusinessItemsToBeSupplied = HashMap<String, (u64, u64)>; 
 
 /**
 * SuppliedItems Struct
@@ -219,7 +219,7 @@ pub struct Order {
     pub order_id: u64,
     pub farmer_id: u64,
     pub supply_agribusiness_id: u64,
-    pub items: HashMap<String, u32>, // item_name -> amount
+    pub items: HashMap<String, (u64,u64)>, // item_name -> amount
     pub total_price: u64,
     pub status: OrderStatus,
 }
@@ -255,7 +255,7 @@ impl Default for Order {
 pub struct NewOrder {
     pub farmer_id: u64,
     pub supply_agribusiness_id: u64,
-    pub items: HashMap<String, u64,u64>, // item_name -> amount
+    pub items: HashMap<String, (u64,u64)>, // item_name -> amount
     pub total_price:  u64,
     pub status: OrderStatus::Pending
 }

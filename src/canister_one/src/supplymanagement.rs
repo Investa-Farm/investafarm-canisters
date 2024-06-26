@@ -1,82 +1,86 @@
 use ic_cdk::update;
-use crate::entitymanagement::{self, Order, NewOrder, OrderStatus, Error, Success};
 use std::collections::HashMap;
+use crate::entitymanagement::{self, NewOrder, OrderStatus, SupplyAgriBusiness};
 
 /**
- * CreateOrder
- * Creates an order for a farmer from a supply agribusiness
- * @params farmer: &mut Farmer, supply_agribusiness: &mut SupplyAgriBusiness, new_order: NewOrder
- * @return Result<(), String>
- */
- pub fn create_order(
-    farmer: &mut Farmer,
-    supply_agribusiness: &mut SupplyAgriBusiness,
-    new_order: NewOrder,
-) -> Result<(), String> {
-    // Check if the supply agribusiness has the item in the required amount
-    let item_price = match supply_agribusiness.items.get(&new_order.item_name) {
-        Some(&price) => price,
-        None => return Err(format!("Item '{}' not found in supply agribusiness.", &new_order.item_name)),
-    };
+* create_order
+* Creates a new order for supply items from a farmer to a supply agribusiness.
+* @params
+*   - new_order: NewOrder - Struct containing details of the order to be created.
+*   - supply_agribusiness: &mut SupplyAgriBusiness - Mutable reference to the supply agribusiness.
+* @return bool - Indicates if the order creation was successful.
+*/
+pub fn create_order(new_order: NewOrder, supply_agribusiness: &mut SupplyAgriBusiness) -> bool {
+    // Check if the item exists in supply_items and get its availability and price
+    if let Some((available_amount, item_price)) = supply_agribusiness.supply_items.get_mut(&new_order.item_name) {
+        // Calculate total price of the order
+        let total_price = item_price * new_order.amount;
 
-    if new_order.amount > supply_agribusiness.stock.get(&new_order.item_name).copied().unwrap_or(0) {
-        return Err(format!(
-            "Not enough stock for '{}'. Requested: {}, Available: {}",
-            &new_order.item_name, new_order.amount, supply_agribusiness.stock[&new_order.item_name]
-        ));
+        // Check if there's enough amount available and if loan ask is sufficient
+        if *available_amount >= new_order.amount && supply_agribusiness.principal_id > total_price {
+            // Update available amount
+            *available_amount -= new_order.amount;
+
+            // Update farmer's loan ask
+            supply_agribusiness.principal_id -= total_price;
+
+            // Add the order to the supply agribusiness's orders list
+            supply_agribusiness.orders.push(new_order);
+
+            return true;
+        }
     }
+    false
+}
 
-    let total_price = item_price * new_order.amount;
-    if total_price > farmer.loan {
-        return Err("Insufficient loan amount to place the order.".to_string());
+/**
+* update_order_status
+* Updates the status of an existing order.
+* @params
+*   - order_id: u64 - Identifier of the order to update.
+*   - new_status: OrderStatus - New status to assign to the order.
+*   - supply_agribusiness: &mut SupplyAgriBusiness - Mutable reference to the supply agribusiness.
+* @return bool - Indicates if the status update was successful.
+*/
+pub fn update_order_status(order_id: u64, new_status: OrderStatus, supply_agribusiness: &mut SupplyAgriBusiness) -> bool {
+    // Iterate through orders and find the order with matching order_id
+    for order in &mut supply_agribusiness.orders {
+        if order.order_id == order_id {
+            order.status = new_status;
+            return true;
+        }
     }
-
-    // Deduct the items from the stock
-    *supply_agribusiness.stock.get_mut(&new_order.item_name).unwrap() -= new_order.amount;
-
-    // Update farmer loan and assets
-    farmer.loan -= total_price;
-    farmer.assets.entry(new_order.item_name.clone()).and_modify(|e| *e += new_order.amount).or_insert(new_order.amount);
-
-    // Create and add the order
-    let order = Order {
-        item_name: new_order.item_name,
-        amount: new_order.amount,
-        total_price,
-        status: OrderStatus::Pending,
-    };
-    farmer.orders.push(order.clone());
-    supply_agribusiness.orders.push(order);
-
-    Ok(())
+    false
 }
 
 /**
- * UpdateOrderStatus
- * Updates the status of an existing order
- * @params order: &mut Order, new_status: OrderStatus
- * @return ()
- */
-pub fn update_order_status(order: &mut Order, new_status: OrderStatus) {
-    order.status = new_status;
+* list_orders_by_agribusiness
+* Lists all orders associated with a specific supply agribusiness.
+* @params
+*   - supply_agribusiness: &SupplyAgriBusiness - Reference to the supply agribusiness.
+* @return Vec<&NewOrder> - Vector of references to orders associated with the supply agribusiness.
+*/
+pub fn list_orders_by_agribusiness(supply_agribusiness: &SupplyAgriBusiness) -> Vec<&NewOrder> {
+    supply_agribusiness.orders.iter().collect()
 }
 
 /**
- * ListSupplyAgribusinessOrders
- * Lists all orders associated with a specific supply agribusiness
- * @params supply_agribusiness: &SupplyAgriBusiness
- * @return Vec<Order>
- */
-pub fn list_supply_agribusiness_orders(supply_agribusiness: &SupplyAgriBusiness) -> Vec<Order> {
-    supply_agribusiness.orders.clone()
-}
+* list_farmer_sent_orders
+* Lists all orders sent by a specific farmer.
+* @params
+*   - farmer_id: u64 - Identifier of the farmer.
+*   - supply_agribusinesses: &[SupplyAgriBusiness] - Slice of supply agribusinesses to search for orders.
+* @return Vec<&NewOrder> - Vector of references to orders sent by the farmer across all agribusinesses.
+*/
+pub fn list_farmer_sent_orders(farmer_id: u64, supply_agribusinesses: &[SupplyAgriBusiness]) -> Vec<&NewOrder> {
+    let mut farmer_orders: Vec<&NewOrder> = Vec::new();
 
-/**
- * ListFarmerOrders
- * Lists all orders sent by a specific farmer
- * @params farmer: &Farmer
- * @return Vec<Order>
- */
-pub fn list_farmer_orders(farmer: &Farmer) -> Vec<Order> {
-    farmer.orders.clone()
-}
+    // Iterate through each supply agribusiness
+    for supply_agribusiness in supply_agribusinesses {
+        // Iterate through orders of each supply agribusiness
+        for order in &supply_agribusiness.orders {
+            if order.farmer_id == farmer_id {
+                farmer_orders.push(order);
+            }
+        }
+    }
