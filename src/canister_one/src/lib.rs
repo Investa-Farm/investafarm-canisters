@@ -1,70 +1,79 @@
-use ic_cdk::{query, update}; 
-use crate::entitymanagement::Error; 
-use crate::entitymanagement::Success; 
-use crate::farmerfiles::FarmerReport; 
-// use crate::entitymanagement::Farmer; 
-// use ic_ledger_types::BlockIndex; 
+use crate::entitymanagement::Error;
+use crate::entitymanagement::Success;
+use crate::farmerfiles::FarmerReport;
+// use crate::askforloan;
+use ic_cdk::{query, update};
+// use crate::entitymanagement::Farmer;
+// use ic_ledger_types::BlockIndex;
 // use crate::icpledger::TransferArgs;
-use candid::Principal; 
+use candid::Principal;
 
-mod entitymanagement;
 mod adminapproval;
-mod payments;
-mod farmsagribizmanagement;
-mod farmerfiles;
-mod creditscore;
 mod askforloan;
+mod creditscore;
+mod entitymanagement;
+mod farmerfiles;
+mod farmsagribizmanagement;
+mod payments;
 
-// Frontend Intergration Testing 
+// Frontend Intergration Testing
 #[query]
 fn test_frontend() -> String {
-    return "Investa Farm Canisters!".to_string()
+    return "Investa Farm Canisters!".to_string();
 }
 
-// REGISTER FARMS 
+// REGISTER FARMS
 #[update]
-fn register_your_farm(new_farmer: entitymanagement::NewFarmer) ->  Result<entitymanagement::Success, entitymanagement::Error> {
+fn register_your_farm(
+    new_farmer: entitymanagement::NewFarmer,
+) -> Result<entitymanagement::Success, entitymanagement::Error> {
     entitymanagement::register_farm(new_farmer)
 }
 
-// REGISTER INVESTOR 
-#[update] 
-fn register_investor(new_investor: entitymanagement::NewInvestor) -> Result<entitymanagement::Success, entitymanagement::Error> {
+// REGISTER INVESTOR
+#[update]
+fn register_investor(
+    new_investor: entitymanagement::NewInvestor,
+) -> Result<entitymanagement::Success, entitymanagement::Error> {
     entitymanagement::register_investor(new_investor)
 }
 
-// REGISTER SUPPLY AGRIBUSINESS 
+// REGISTER SUPPLY AGRIBUSINESS
 #[update]
-fn register_supply_agribusiness(new_supply_agribusiness: entitymanagement::NewSupplyAgriBusiness) -> Result<entitymanagement::Success, entitymanagement::Error> {
+fn register_supply_agribusiness(
+    new_supply_agribusiness: entitymanagement::NewSupplyAgriBusiness,
+) -> Result<entitymanagement::Success, entitymanagement::Error> {
     entitymanagement::register_supply_agribusiness(new_supply_agribusiness)
 }
 
-// REGISTER FARMS AGRI BUSINESS 
-#[update] 
-fn register_farms_agribusiness(new_farms_agribusiness: entitymanagement::NewFarmsAgriBusiness) -> Result<entitymanagement::Success, entitymanagement::Error> {
+// REGISTER FARMS AGRI BUSINESS
+#[update]
+fn register_farms_agribusiness(
+    new_farms_agribusiness: entitymanagement::NewFarmsAgriBusiness,
+) -> Result<entitymanagement::Success, entitymanagement::Error> {
     entitymanagement::register_farms_agribusiness(new_farms_agribusiness)
 }
 
-// DISPLAY FARMS THAT HAVE REGISTERED 
+// DISPLAY FARMS THAT HAVE REGISTERED
 #[query]
 fn display_farms() -> Vec<entitymanagement::Farmer> {
     entitymanagement::return_farmers()
 }
 
-// DISPLAY INVESTORS THAT HAVE REGISTERED 
+// DISPLAY INVESTORS THAT HAVE REGISTERED
 #[query]
 fn display_investors() -> Vec<entitymanagement::Investor> {
     entitymanagement::return_investors()
 }
 
-// DISPLAY SUPPLY AGRI BIZ THAT HAVE REGISTERED 
-#[query] 
+// DISPLAY SUPPLY AGRI BIZ THAT HAVE REGISTERED
+#[query]
 fn display_supply_agribusinesses() -> Vec<entitymanagement::SupplyAgriBusiness> {
     entitymanagement::return_supply_agribusiness()
 }
 
-// DISPLAY FARMS AGRI BIZ THAT HAVE REGISTERED 
-#[query] 
+// DISPLAY FARMS AGRI BIZ THAT HAVE REGISTERED
+#[query]
 fn display_farms_agribusinesses() -> Vec<entitymanagement::FarmsAgriBusiness> {
     entitymanagement::return_farms_agribusiness()
 }
@@ -73,4 +82,4 @@ fn display_farms_agribusinesses() -> Vec<entitymanagement::FarmsAgriBusiness> {
 //     payments::test_ledger()
 // }
 
-ic_cdk::export_candid!(); 
+ic_cdk::export_candid!();

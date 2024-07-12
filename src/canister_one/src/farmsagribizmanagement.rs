@@ -17,26 +17,7 @@ fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusines
 
     if let Err(entitymanagement::Error::PrincipalIdAlreadyRegistered { msg: _ }) = response {
         // Code for when the principal ID is already registered
-        let farmer = entitymanagement::Farmer {
-            id,
-            principal_id: ic_cdk::caller(),
-            farmer_name: new_farmer.farmer_name,
-            farm_name: new_farmer.farm_name,
-            farm_description: new_farmer.farm_description,
-            farm_assets: None,
-            amount_invested: None,
-            investors_ids: Principal::anonymous(),
-            verified: true,
-            agri_business: agribusiness_name.clone(),
-            insured: None, 
-            publish: false, 
-            ifarm_tokens: None, 
-            credit_score: None, 
-            current_loan_ask: None, 
-            loaned: false, 
-            loan_maturity: None, 
-            time_for_funding_round_to_expire: None
-        };
+        let farmer = entitymanagement::Farmer {id,principal_id:ic_cdk::caller(),farmer_name:new_farmer.farmer_name,farm_name:new_farmer.farm_name,farm_description:new_farmer.farm_description,farm_assets:None,amount_invested:None,investors_ids:Principal::anonymous(),verified:true,agri_business:agribusiness_name.clone(),insured:None,publish:false,ifarm_tokens:None,credit_score:None,current_loan_ask:None,loaned:false,loan_maturity:None,time_for_funding_round_to_expire:None, funding_round_start_time: None };
 
         let farmer_clone1 = farmer.clone();
         let farmer_clone2 = farmer.clone();
@@ -59,7 +40,6 @@ fn add_farm_to_agribusiness(new_farmer: entitymanagement::NewFarmer, agribusines
             msg: "You are not registered as a FarmsAgriBusiness, or the agribusiness name is incorrect.".to_string(),
         })
     }
-
 }
 
 
