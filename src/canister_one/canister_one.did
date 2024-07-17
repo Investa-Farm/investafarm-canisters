@@ -19,6 +19,7 @@ type Farmer = record {
   farm_assets : opt vec record { text; record { nat64; nat64 } };
   loaned : bool;
   amount_invested : opt nat64;
+  funding_round_start_time : opt nat64;
   time_for_funding_round_to_expire : opt Duration;
   ifarm_tokens : opt nat64;
   farmer_name : text;
@@ -66,7 +67,8 @@ type NewSupplyAgriBusiness = record {
 };
 type Result = variant { Ok : Success; Err : Error };
 type Result_1 = variant { Ok; Err : Error };
-type Result_2 = variant { Ok; Err : text };
+type Result_2 = variant { Ok : nat64; Err : Error };
+type Result_3 = variant { Ok; Err : text };
 type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
@@ -111,13 +113,14 @@ service : {
   get_investments_by_investor : (nat64) -> (
       opt vec record { nat64; float64; text; text },
     ) query;
+  get_remaining_funding_time : (nat64) -> (Result_2) query;
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
-  store_investments : (nat64, float64, nat64, text, text) -> (Result_2);
+  store_investments : (nat64, float64, nat64, text, text) -> (Result_3);
   test_frontend : () -> (text) query;
   uploaded_farmer_report : (text, nat64, text, text) -> (Result);
   verify_farmer : (nat64, bool) -> (Result_1);
