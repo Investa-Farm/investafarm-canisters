@@ -574,6 +574,7 @@ pub enum Success {
 // Error Messages
 #[derive(CandidType, Deserialize, Serialize)]
 pub enum Error {
+    MismatchId { msg: String },
     FieldEmpty { msg: String },
     ItemsNotEmpty { msg: String },
     AgribusinessNotFound { msg: String },
@@ -943,6 +944,11 @@ pub fn add_supply_items(
         if let Some(supply_agribusiness) = storage.get(&supply_agribusiness_id) {
             let mut supply_agribusiness = supply_agribusiness.clone();
 
+
+            if supply_agribusiness.id != supply_agribusiness_id {
+                return Err(Error::MismatchId { msg: "Mismatch in supply agribusiness ID.".to_string() });
+            }
+            
             if supply_agribusiness.items_to_be_supplied.is_none() {
                 supply_agribusiness.items_to_be_supplied = Some(items);
                 storage.insert(supply_agribusiness_id, supply_agribusiness);
