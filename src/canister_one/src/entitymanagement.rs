@@ -214,7 +214,7 @@ pub struct SuppliedItems {
 * OrderStatus
 * Enum for the status of an order.
 */
-#[derive(Default, Debug, Serialize, Deserialize, CandidType, Clone)]
+#[derive(Default, Debug, Serialize, Deserialize, CandidType, Clone, PartialEq)]
 pub enum OrderStatus {
     #[default]
     Pending,
@@ -542,7 +542,7 @@ thread_local! {
     static FARMS_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(3);
 
     // Mapping farmers with their farm names: for ensuring there are no duplicate farm names
-    static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
+    pub static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
 
     // Mapping Investors with their investor names
     static REGISTERED_INVESTORS: RefCell<HashMap<String, Investor>> = RefCell::new(HashMap::new());
@@ -1110,4 +1110,9 @@ pub fn log_in() -> Result<Success, Error> {
     });
 
     result
+}
+
+
+pub fn get_registered_farmers() -> HashMap<String, Farmer> {
+    REGISTERED_FARMERS.with(|farmers| farmers.borrow().clone())
 }
