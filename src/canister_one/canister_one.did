@@ -61,10 +61,26 @@ type NewFarmsAgriBusiness = record {
   total_farmers : nat64;
 };
 type NewInvestor = record { name : text };
+type NewOrder = record {
+  farmer_id : nat64;
+  total_price : nat64;
+  items : vec record { text; record { nat64; nat64 } };
+  supply_agribusiness_id : nat64;
+};
 type NewSupplyAgriBusiness = record {
   agribusiness_name : text;
   items_to_be_supplied : opt vec record { text; record { nat64; nat64 } };
 };
+type Order = record {
+  status : OrderStatus;
+  farmer_id : nat64;
+  total_price : nat64;
+  principal_id : principal;
+  order_id : nat64;
+  items : vec record { text; record { nat64; nat64 } };
+  supply_agribusiness_id : nat64;
+};
+type OrderStatus = variant { Complete; Cancelled; Pending };
 type Result = variant { Ok : Success; Err : Error };
 type Result_1 = variant { Ok; Err : Error };
 type Result_2 = variant { Ok : nat64; Err : Error };
@@ -88,11 +104,12 @@ type Success = variant {
 type SupplyAgriBusiness = record {
   id : nat64;
   verified : bool;
+  orders : vec Order;
   agribusiness_name : text;
   items_to_be_supplied : opt vec record { text; record { nat64; nat64 } };
   principal_id : principal;
 };
-service : {
+service : () -> {
   add_credit_score : (nat64, nat64) -> (Result);
   add_farm_to_agribusiness : (NewFarmer, text) -> (Result);
   add_supply_items : (nat64, vec record { text; record { nat64; nat64 } }) -> (
@@ -100,6 +117,7 @@ service : {
     );
   ask_for_loan : (nat64, nat64) -> (Result);
   check_loan_expiry : (nat64) -> (Result_1);
+  create_order : (NewOrder, nat64) -> (bool);
   delete_farm : (nat64) -> (Result);
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
@@ -114,6 +132,8 @@ service : {
       opt vec record { nat64; float64; text; text },
     ) query;
   get_remaining_funding_time : (nat64) -> (Result_2) query;
+  list_farmer_sent_orders : (nat64, vec nat64) -> (vec Order) query;
+  list_orders_by_agribusiness : (nat64) -> (vec Order) query;
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
@@ -122,6 +142,7 @@ service : {
   register_your_farm : (NewFarmer) -> (Result);
   store_investments : (nat64, float64, nat64, text, text) -> (Result_3);
   test_frontend : () -> (text) query;
+  update_order_status : (nat64, OrderStatus, nat64) -> (bool);
   uploaded_farmer_report : (text, nat64, text, text) -> (Result);
   verify_farmer : (nat64, bool) -> (Result_1);
   verify_farms_agribusiness : (nat64, bool) -> (Result_1);

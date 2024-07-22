@@ -151,11 +151,12 @@ pub struct NewInvestor {
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct SupplyAgriBusiness {
     pub id: u64,               //Unique identifier for the business.
-    agribusiness_name: String, //Name of the agricultural business.
-    items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business
+    pub agribusiness_name: String, //Name of the agricultural business.
+    pub items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business
+    pub orders: Vec<Order>,
     //supplied_items: Option<SuppliedItems>,
     pub verified: bool,      //Indicates if the business is verified.
-    principal_id: Principal, //ID associated with the business's principal.
+    pub principal_id: Principal, //ID associated with the business's principal.
 }
 
 /**
@@ -171,6 +172,7 @@ impl Default for SupplyAgriBusiness {
             id: 0,
             agribusiness_name: String::new(),
             items_to_be_supplied: None,
+            orders: Vec::new(), // Initialize orders vector
             //supplied_items: SuppliedItems,
             verified: false,
             principal_id: Principal::anonymous(),
@@ -186,8 +188,8 @@ impl Default for SupplyAgriBusiness {
 */
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct NewSupplyAgriBusiness {
-    agribusiness_name: String, //Name of the new agricultural business.
-    items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business.
+    pub agribusiness_name: String, //Name of the new agricultural business.
+    pub items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business.
 }
 
 /**
@@ -202,17 +204,17 @@ type AgribusinessItemsToBeSupplied = Vec<(String, (u64, u64))>;
 */
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct SuppliedItems {
-    principal_id: Principal, //ID associated with the principal of the item.
-    item_name: String,       //Name of the item supplied.
-    amount: u64,             //Amount of the item supplied.
-    price: u64,              // Price in I-Farm Tokens
+    pub principal_id: Principal, //ID associated with the principal of the item.
+    pub item_name: String,       //Name of the item supplied.
+    pub amount: u64,             //Amount of the item supplied.
+    pub price: u64,              // Price in I-Farm Tokens
 }
 
 /**
 * OrderStatus
 * Enum for the status of an order.
 */
-#[derive(Default, Debug, Serialize, Deserialize)]
+#[derive(Default, Debug, Serialize, Deserialize, CandidType, Clone, PartialEq)]
 pub enum OrderStatus {
     #[default]
     Pending,
@@ -234,7 +236,7 @@ pub struct Order {
     pub supply_agribusiness_id: u64,
     pub items: HashMap<String, (u64, u64)>, // item_name -> amount
     pub total_price: u64,
-    pub status: bool,
+    pub status: OrderStatus,
 }
 
 /**
@@ -253,7 +255,7 @@ impl Default for Order {
             supply_agribusiness_id: 0,
             items: HashMap::new(),
             total_price: 0,
-            status: false,
+            status: OrderStatus::Pending,
         }
     }
 }
@@ -540,7 +542,7 @@ thread_local! {
     static FARMS_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(3);
 
     // Mapping farmers with their farm names: for ensuring there are no duplicate farm names
-    static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
+    pub static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
 
     // Mapping Investors with their investor names
     static REGISTERED_INVESTORS: RefCell<HashMap<String, Investor>> = RefCell::new(HashMap::new());
@@ -842,6 +844,7 @@ pub fn register_supply_agribusiness(
         id: 0,
         agribusiness_name: new_supply_agribusiness.agribusiness_name,
         items_to_be_supplied: new_supply_agribusiness.items_to_be_supplied,
+        orders: Vec::new(),
         //supplied_items: SuppliedItems,
         verified: false,
         principal_id: new_supply_agribusiness_principal_id,
@@ -1107,4 +1110,9 @@ pub fn log_in() -> Result<Success, Error> {
     });
 
     result
+}
+
+
+pub fn get_registered_farmers() -> HashMap<String, Farmer> {
+    REGISTERED_FARMERS.with(|farmers| farmers.borrow().clone())
 }
