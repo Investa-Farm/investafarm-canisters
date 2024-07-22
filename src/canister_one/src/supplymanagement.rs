@@ -2,7 +2,7 @@ use ic_cdk::caller;
 use ic_cdk::{query, update, init};
 use std::collections::HashMap;
 use std::ptr::{addr_of, addr_of_mut};
-use crate::entitymanagement::{Order, NewOrder, OrderStatus, SupplyAgriBusiness, get_registered_farmers};
+use crate::entitymanagement::{self, get_registered_farmers, NewOrder, Order, OrderStatus, Success, SupplyAgriBusiness, Error};
 
 // Global collection to store SupplyAgriBusiness instances
 type SupplyAgriBusinesses = HashMap<u64, SupplyAgriBusiness>;
@@ -13,6 +13,47 @@ fn init() {
     unsafe {
         SUPPLY_AGRIBUSINESSES = Some(HashMap::new());
     }
+}
+
+/**
+* add_supply_items
+* Adds supply items to a supply agribusiness if empty.
+* @param supply_agribusiness_id: u64, items: Vec<SupplyItem>
+* @return type: Result<Success, Error>
+*/
+#[update]
+pub fn add_supply_items(
+    supply_agribusiness_id: u64,
+    items: Vec<(String, (u64, u64))>,
+) -> Result<Success, Error> {
+    entitymanagement::SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+
+        if let Some(supply_agribusiness) = storage.get(&supply_agribusiness_id) {
+            let mut supply_agribusiness = supply_agribusiness.clone();
+
+
+            if supply_agribusiness.id != supply_agribusiness_id {
+                return Err(Error::MismatchId { msg: "Mismatch in supply agribusiness ID.".to_string() });
+            }
+            
+            if supply_agribusiness.items_to_be_supplied.is_none() {
+                supply_agribusiness.items_to_be_supplied = Some(items);
+                storage.insert(supply_agribusiness_id, supply_agribusiness);
+                return Ok(Success::ItemsAdded {
+                    msg: "Supply items added successfully.".to_string(),
+                });
+            } else {
+                return Err(Error::ItemsNotEmpty {
+                    msg: "Supply items already exist.".to_string(),
+                });
+            }
+        } else {
+            return Err(Error::AgribusinessNotFound {
+                msg: "Supply agribusiness not found.".to_string(),
+            });
+        }
+    })
 }
 
 /**
