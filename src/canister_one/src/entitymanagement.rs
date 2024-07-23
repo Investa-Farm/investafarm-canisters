@@ -633,7 +633,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
 
     // Checking whether the farm name is taken
     let farm_name = &new_farmer.farm_name;
-    REGISTERED_FARMERS.with(|farmers| {
+    let _ = REGISTERED_FARMERS.with(|farmers| {
         if farmers.borrow().contains_key(farm_name) {
             return Err(Error::FarmNameTaken {
                 msg: format!("The farm name '{}' is already taken!", farm_name),
@@ -927,47 +927,6 @@ pub fn register_farms_agribusiness(
 
     Ok(Success::SupplyAgriBizRegisteredSuccesfully {
         msg: format!("Supply Agri Business has been registered succesfully"),
-    })
-}
-
-/**
-* add_supply_items
-* Adds supply items to a supply agribusiness if empty.
-* @param supply_agribusiness_id: u64, items: Vec<SupplyItem>
-* @return type: Result<Success, Error>
-*/
-#[update]
-pub fn add_supply_items(
-    supply_agribusiness_id: u64,
-    items: Vec<(String, (u64, u64))>,
-) -> Result<Success, Error> {
-    SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| {
-        let mut storage = storage.borrow_mut();
-
-        if let Some(supply_agribusiness) = storage.get(&supply_agribusiness_id) {
-            let mut supply_agribusiness = supply_agribusiness.clone();
-
-
-            if supply_agribusiness.id != supply_agribusiness_id {
-                return Err(Error::MismatchId { msg: "Mismatch in supply agribusiness ID.".to_string() });
-            }
-            
-            if supply_agribusiness.items_to_be_supplied.is_none() {
-                supply_agribusiness.items_to_be_supplied = Some(items);
-                storage.insert(supply_agribusiness_id, supply_agribusiness);
-                return Ok(Success::ItemsAdded {
-                    msg: "Supply items added successfully.".to_string(),
-                });
-            } else {
-                return Err(Error::ItemsNotEmpty {
-                    msg: "Supply items already exist.".to_string(),
-                });
-            }
-        } else {
-            return Err(Error::AgribusinessNotFound {
-                msg: "Supply agribusiness not found.".to_string(),
-            });
-        }
     })
 }
 

@@ -130,7 +130,7 @@ pub fn create_order(new_order: NewOrder, supply_agribusiness_id: u64) -> bool {
  * @param new_status: OrderStatus - The new status to set for the order.
  * @param supply_agribusiness_id: u64 - The ID of the supply agribusiness containing the order.
  * @return bool - True if the status was successfully updated, false otherwise.
- */
+*/
 #[update]
 pub fn update_order_status(order_id: u64, new_status: OrderStatus, supply_agribusiness_id: u64) -> bool {
     unsafe {
@@ -170,7 +170,7 @@ pub fn list_orders_by_agribusiness(supply_agribusiness_id: u64) -> Vec<Order> {
  * @param farmer_id: u64 - The ID of the farmer to list orders for.
  * @param supply_agribusiness_ids: Vec<u64> - A vector of supply agribusiness IDs to search for orders.
  * @return Vec<Order> - A vector containing orders sent by the farmer to the supply agribusinesses.
- */
+*/
 #[query]
 pub fn list_farmer_sent_orders(farmer_id: u64, supply_agribusiness_ids: Vec<u64>) -> Vec<Order> {
     let mut farmer_orders: Vec<Order> = Vec::new();
