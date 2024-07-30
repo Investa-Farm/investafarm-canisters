@@ -100,6 +100,7 @@ service : {
   ask_for_loan : (nat64, nat64) -> (Result);
   check_loan_expiry : (nat64) -> (Result_1);
   delete_farm : (nat64) -> (Result);
+  deposit_principal : (text) -> (text) query;
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
   display_investors : () -> (vec Investor) query;
@@ -112,6 +113,7 @@ service : {
   get_investments_by_investor : (nat64) -> (
       opt vec record { nat64; float64; text; text },
     ) query;
+  get_receipt : (text) -> (text);
   get_remaining_funding_time : (nat64) -> (Result_2) query;
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);

@@ -15,6 +15,8 @@ mod entitymanagement;
 mod farmerfiles;
 mod farmsagribizmanagement;
 mod payments;
+mod ck_eth;
+mod ck_eth_payments;
 
 // Frontend Intergration Testing
 #[query]
