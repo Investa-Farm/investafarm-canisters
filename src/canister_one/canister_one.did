@@ -16,6 +16,7 @@ type Farmer = record {
   verified : bool;
   current_loan_ask : opt nat64;
   farm_assets : opt vec record { text; record { nat64; nat64 } };
+  loan_start_time : opt nat64;
   loaned : bool;
   amount_invested : opt nat64;
   funding_round_start_time : opt nat64;
@@ -65,9 +66,10 @@ type NewSupplyAgriBusiness = record {
   items_to_be_supplied : opt vec record { text; record { nat64; nat64 } };
 };
 type Result = variant { Ok : Success; Err : Error };
-type Result_1 = variant { Ok; Err : Error };
+type Result_1 = variant { Ok : bool; Err : Error };
 type Result_2 = variant { Ok : nat64; Err : Error };
-type Result_3 = variant { Ok; Err : text };
+type Result_3 = variant { Ok; Err : Error };
+type Result_4 = variant { Ok; Err : text };
 type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
@@ -98,7 +100,7 @@ service : {
       Result,
     );
   ask_for_loan : (nat64, nat64) -> (Result);
-  check_loan_expiry : (nat64) -> (Result_1);
+  check_funding_round_expiry : (nat64) -> (Result_1);
   delete_farm : (nat64) -> (Result);
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
@@ -113,18 +115,20 @@ service : {
       opt vec record { nat64; float64; text; text },
     ) query;
   get_remaining_funding_time : (nat64) -> (Result_2) query;
+  get_remaining_loan_maturity_time : (nat64) -> (Result_2) query;
+  initiate_loan : (nat64) -> (Result_3);
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
-  store_investments : (nat64, float64, nat64, text, text) -> (Result_3);
+  store_investments : (nat64, float64, nat64, text, text) -> (Result_4);
   test_frontend : () -> (text) query;
   uploaded_farmer_report : (text, nat64, text, text) -> (Result);
-  verify_farmer : (nat64, bool) -> (Result_1);
-  verify_farms_agribusiness : (nat64, bool) -> (Result_1);
-  verify_investor : (nat64, bool) -> (Result_1);
-  verify_supply_agribusiness : (nat64, bool) -> (Result_1);
+  verify_farmer : (nat64, bool) -> (Result_3);
+  verify_farms_agribusiness : (nat64, bool) -> (Result_3);
+  verify_investor : (nat64, bool) -> (Result_3);
+  verify_supply_agribusiness : (nat64, bool) -> (Result_3);
   who_am_i : () -> (principal);
 }
