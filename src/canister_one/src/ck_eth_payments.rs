@@ -9,8 +9,12 @@ use candid::Principal;
 use b3_utils::{vec_to_hex_string_with_0x, Subaccount};
 use b3_utils::outcall::{HttpOutcall, HttpOutcallResponse};
 use serde_json::json;
-
 use crate::ck_eth::receipt;
+use serde::Serialize;
+
+use evm_rpc_canister_types::{
+    BlockTag, EthSepoliaService, EvmRpcCanister, GetTransactionReceiptResult, MultiGetTransactionReceiptResult, RpcError, RpcServices
+}; 
 
 // const MINTER_ADDRESS: &str = "0xb44b5e756a894775fc32eddf3314bb1b1944dc34";
 // const LEDGER: &str = "apia6-jaaaa-aaaar-qabma-cai"; // Canister responsible for keeping track of account balances and facilitating transfer of ckETH among users
@@ -23,6 +27,48 @@ use crate::ck_eth::receipt;
 //     amount: NumTokens,
 //     to_account: Account,
 // }
+
+#[derive(Serialize)]
+enum ReceiptWrapper {
+    Ok(TransactionReceiptData),
+    Err(String),
+}
+
+#[derive(Serialize)]
+struct TransactionReceiptData {
+    to: String,
+    status: String, // We'll convert Nat to String for serialization
+    transaction_hash: String,
+    block_number: String, // We'll convert Nat to String for serialization
+    from: String,
+    //
+}
+
+impl From<GetTransactionReceiptResult> for ReceiptWrapper {
+    fn from(result: GetTransactionReceiptResult) -> Self {
+        match result {
+            GetTransactionReceiptResult::Ok(receipt) => {
+                if let Some(receipt) = receipt {
+                    ReceiptWrapper::Ok(TransactionReceiptData {
+                        to: receipt.to,
+                        status: receipt.status.to_string(),
+                        transaction_hash: receipt.transactionHash,
+                        block_number: receipt.blockNumber.to_string(),
+                        from: receipt.from,
+                        // ... map other fields as needed
+                    })
+                } else {
+                    ReceiptWrapper::Err("Receipt is None".to_string())
+                }
+            },
+            GetTransactionReceiptResult::Err(e) => ReceiptWrapper::Err(format!("Error on Get transaction receipt result: {:?}", e)),
+        }
+    }
+}
+
+pub const EVM_RPC_CANISTER_ID: Principal =
+    Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
+pub const EVM_RPC: EvmRpcCanister = EvmRpcCanister(EVM_RPC_CANISTER_ID);
 
 const RPC_URL: &str = "https://eth-sepolia.g.alchemy.com/v2/DZ4mML30eplCsoK1DGPPbhX5YfvR7ZhL";
 
@@ -40,47 +86,38 @@ fn deposit_principal(principal: String) -> String {
 // Testing get receipt function 
 #[ic_cdk::update]
 async fn get_receipt(hash: String) -> String {
-    let receipt = eth_get_transaction_receipt(hash).await.unwrap(); 
-
-    serde_json::to_string(&receipt).unwrap()
+    let receipt = eth_get_transaction_receipt(hash).await.unwrap();
+    let wrapper = ReceiptWrapper::from(receipt);
+    serde_json::to_string(&wrapper).unwrap()
 }
 
 // Function for getting transaction receipt the transaction hash
-async fn eth_get_transaction_receipt(hash: String) -> Result<receipt::Root, String> {
+async fn eth_get_transaction_receipt(hash: String) -> Result<GetTransactionReceiptResult, String> {
+    // Make the call to the EVM_RPC canister
+    let result: Result<(MultiGetTransactionReceiptResult,), String> = EVM_RPC 
+        .eth_get_transaction_receipt(
+            RpcServices::EthSepolia(Some(vec![
+                EthSepoliaService::PublicNode,
+                EthSepoliaService::BlockPi,
+                EthSepoliaService::Ankr,
+            ])),
+            None, 
+            hash, 
+            10_000_000_000
+        )
+        .await 
+        .map_err(|e| format!("Failed to call eth_getTransactionReceipt: {:?}", e));
 
-    // Preparing JSON RPC Payload usnig the serde_json::json!
-    let rpc = json!({
-        "jsonrpc": "2.0",
-        "id": 0,
-        "method": "eth_getTransactionReceipt",
-        "params": [hash]
-    }); 
-    
-    // Using HttpOutcall struct from b3_utils to make an HTTP POST request to the RPC URL
-    let request = HttpOutcall::new(RPC_URL)
-        .post(&rpc.to_string(), Some(2048))
-        .send_with_closure(|response: HttpOutcallResponse| HttpOutcallResponse {
-            status: response.status,
-            body: response.body,
-            ..Default::default()
-        });
-    
-    match request.await {
-        Ok(response) => {
-            if response.status != 200u16 {
-                return Err(format!("Error: {}", response.status));
-            }
-
-            let transaction = serde_json::from_slice::<receipt::Root>(&response.body)
-                .map_err(|e| format!("Error: {}", e.to_string()))?;
-
-            Ok(transaction)
-        }
-        Err(m) => Err(format!("Error: {}", m)),
-    }
+    match result {
+        Ok((MultiGetTransactionReceiptResult::Consistent(receipt),)) => {
+            Ok(receipt)
+        },
+        Ok((MultiGetTransactionReceiptResult::Inconsistent(error),)) => {
+            Err(format!("EVM_RPC returned inconsistent results: {:?}", error))
+        },
+        Err(e) => Err(format!("Error calling EVM_RPC: {}", e)),
+    }    
 }
-
-
 
 // #[ic_cdk::update(guard = "caller_is_controller")]
 // async fn transfer(to: String, amount: Nat) -> ICRC1TransferResult {

@@ -19,4 +19,7 @@ ic-cdk-macros = "0.8.4"
 ic-ledger-types = "0.9.0"
 serde_derive = "1.0"
 b3_utils = "0.8.0"
+ic-evm-utils = "1.0.0"
+evm-rpc-canister-types = "1.0.0"
+getrandom = { version = "0.2", features = ["js"] }
 
