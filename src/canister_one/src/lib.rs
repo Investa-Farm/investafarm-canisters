@@ -1,6 +1,7 @@
 use crate::entitymanagement::Error;
 use crate::entitymanagement::Success;
 use crate::farmerfiles::FarmerReport;
+use crate::ck_eth_payments::VerifiedTransactionDetails; 
 // use crate::askforloan;
 use ic_cdk::{query, update};
 // use crate::entitymanagement::Farmer;

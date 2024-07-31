@@ -16,7 +16,10 @@ use evm_rpc_canister_types::{
     BlockTag, EthSepoliaService, EvmRpcCanister, GetTransactionReceiptResult, MultiGetTransactionReceiptResult, RpcError, RpcServices
 }; 
 
-// const MINTER_ADDRESS: &str = "0xb44b5e756a894775fc32eddf3314bb1b1944dc34";
+use b3_utils::hex_string_with_0x_to_nat;
+use candid::{Nat, CandidType, Deserialize};
+
+const MINTER_ADDRESS: &str = "0xb44b5e756a894775fc32eddf3314bb1b1944dc34"; // Minter address for ckSepoliaETH
 // const LEDGER: &str = "apia6-jaaaa-aaaar-qabma-cai"; // Canister responsible for keeping track of account balances and facilitating transfer of ckETH among users
 // const MINTER: &str = "jzenf-aiaaa-aaaar-qaa7q-cai"; // Canister responsible for minting and burning of ckETH tokens -> When a user deposits ETH to the helper contract on Ethereum...
 // // the MINTER listens for ReceivedEth events and transfers the ckETH tokens to the user's account - and similarly, when a user wants to withdraw ETH from the helper contract on Ethereum...
@@ -29,6 +32,12 @@ use evm_rpc_canister_types::{
 // }
 
 #[derive(Serialize)]
+struct LogEntry {
+    address: String,
+    topics: Vec<String>,
+}
+
+#[derive(Serialize)]
 enum ReceiptWrapper {
     Ok(TransactionReceiptData),
     Err(String),
@@ -37,11 +46,17 @@ enum ReceiptWrapper {
 #[derive(Serialize)]
 struct TransactionReceiptData {
     to: String,
-    status: String, // We'll convert Nat to String for serialization
+    status: String, 
     transaction_hash: String,
-    block_number: String, // We'll convert Nat to String for serialization
+    block_number: String, 
     from: String,
-    //
+    logs: Vec<LogEntry>, 
+}
+
+#[derive(Serialize, CandidType, Deserialize)]
+pub struct VerifiedTransactionDetails {
+    amount: String,
+    from: String,
 }
 
 impl From<GetTransactionReceiptResult> for ReceiptWrapper {
@@ -55,7 +70,10 @@ impl From<GetTransactionReceiptResult> for ReceiptWrapper {
                         transaction_hash: receipt.transactionHash,
                         block_number: receipt.blockNumber.to_string(),
                         from: receipt.from,
-                        // ... map other fields as needed
+                        logs: receipt.logs.into_iter().map(|log| LogEntry {
+                            address: log.address,
+                            topics: log.topics,
+                        }).collect(),
                     })
                 } else {
                     ReceiptWrapper::Err("Receipt is None".to_string())
@@ -66,11 +84,10 @@ impl From<GetTransactionReceiptResult> for ReceiptWrapper {
     }
 }
 
+
 pub const EVM_RPC_CANISTER_ID: Principal =
     Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
 pub const EVM_RPC: EvmRpcCanister = EvmRpcCanister(EVM_RPC_CANISTER_ID);
-
-const RPC_URL: &str = "https://eth-sepolia.g.alchemy.com/v2/DZ4mML30eplCsoK1DGPPbhX5YfvR7ZhL";
 
 // Converting the principal object into a subaccount from the principal (necessary for depositing ETH)
 #[ic_cdk::query] 
@@ -118,6 +135,49 @@ async fn eth_get_transaction_receipt(hash: String) -> Result<GetTransactionRecei
         Err(e) => Err(format!("Error calling EVM_RPC: {}", e)),
     }    
 }
+
+// Function for verifying the transaction on-chain
+#[ic_cdk::update]
+async fn verify_transaction(hash: String, deposit_principal: String) -> Result<VerifiedTransactionDetails, String> {
+    // Get the transaction receipt
+    let receipt = match eth_get_transaction_receipt(hash.clone()).await {
+        Ok(receipt) => receipt,
+        Err(e) => return Err(format!("Failed to get receipt: {}", e)),
+    };
+
+    // Ensure the transaction was successful
+    let receipt_data = match receipt {
+        GetTransactionReceiptResult::Ok(Some(data)) => data,
+        GetTransactionReceiptResult::Ok(None) => return Err("Receipt is None".to_string()),
+        GetTransactionReceiptResult::Err(e) => return Err(format!("Error on Get transaction receipt result: {:?}", e)),
+    };
+
+    // Check if the status indicates success (Nat 1)
+    let success_status = Nat::from(1u8);
+    if receipt_data.status != success_status {
+        return Err("Transaction failed".to_string());
+    }
+
+    // Verify the 'to' address matches the minter address
+    if receipt_data.to != MINTER_ADDRESS {
+        return Err("Minter address does not match".to_string());
+    }
+
+    // Verify the principal in the logs matches the deposit principal
+    let log_principal = receipt_data.logs.iter()
+        .find(|log| log.topics.get(2).map(|topic| topic.as_str()) == Some(&deposit_principal))
+        .ok_or_else(|| "Principal does not match or missing in logs".to_string())?;
+
+    // Extract relevant transaction details
+    let amount = log_principal.data.clone();
+    let from_address = receipt_data.from.clone();
+
+    Ok(VerifiedTransactionDetails {
+        amount,
+        from: from_address,
+    })
+}
+
 
 // #[ic_cdk::update(guard = "caller_is_controller")]
 // async fn transfer(to: String, amount: Nat) -> ICRC1TransferResult {
