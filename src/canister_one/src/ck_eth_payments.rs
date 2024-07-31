@@ -108,34 +108,6 @@ async fn get_receipt(hash: String) -> String {
     serde_json::to_string(&wrapper).unwrap()
 }
 
-// Function for getting transaction receipt the transaction hash
-async fn eth_get_transaction_receipt(hash: String) -> Result<GetTransactionReceiptResult, String> {
-    // Make the call to the EVM_RPC canister
-    let result: Result<(MultiGetTransactionReceiptResult,), String> = EVM_RPC 
-        .eth_get_transaction_receipt(
-            RpcServices::EthSepolia(Some(vec![
-                EthSepoliaService::PublicNode,
-                EthSepoliaService::BlockPi,
-                EthSepoliaService::Ankr,
-            ])),
-            None, 
-            hash, 
-            10_000_000_000
-        )
-        .await 
-        .map_err(|e| format!("Failed to call eth_getTransactionReceipt: {:?}", e));
-
-    match result {
-        Ok((MultiGetTransactionReceiptResult::Consistent(receipt),)) => {
-            Ok(receipt)
-        },
-        Ok((MultiGetTransactionReceiptResult::Inconsistent(error),)) => {
-            Err(format!("EVM_RPC returned inconsistent results: {:?}", error))
-        },
-        Err(e) => Err(format!("Error calling EVM_RPC: {}", e)),
-    }    
-}
-
 // Function for verifying the transaction on-chain
 #[ic_cdk::update]
 async fn verify_transaction(hash: String, deposit_principal: String) -> Result<VerifiedTransactionDetails, String> {
@@ -169,7 +141,8 @@ async fn verify_transaction(hash: String, deposit_principal: String) -> Result<V
         .ok_or_else(|| "Principal does not match or missing in logs".to_string())?;
 
     // Extract relevant transaction details
-    let amount = log_principal.data.clone();
+    //  let amount = hex_string_with_0x_to_nat(log_principal.data.clone());
+    let amount =  log_principal.data.clone();
     let from_address = receipt_data.from.clone();
 
     Ok(VerifiedTransactionDetails {
@@ -178,6 +151,42 @@ async fn verify_transaction(hash: String, deposit_principal: String) -> Result<V
     })
 }
 
+#[ic_cdk::query] 
+fn canister_deposit_principal() -> String {
+    let subaccount = Subaccount::from(ic_cdk::id()); 
+
+    let bytes32 = subaccount.to_bytes32().unwrap(); 
+
+    vec_to_hex_string_with_0x(bytes32)
+}
+
+// Function for getting transaction receipt the transaction hash
+async fn eth_get_transaction_receipt(hash: String) -> Result<GetTransactionReceiptResult, String> {
+    // Make the call to the EVM_RPC canister
+    let result: Result<(MultiGetTransactionReceiptResult,), String> = EVM_RPC 
+        .eth_get_transaction_receipt(
+            RpcServices::EthSepolia(Some(vec![
+                EthSepoliaService::PublicNode,
+                EthSepoliaService::BlockPi,
+                EthSepoliaService::Ankr,
+            ])),
+            None, 
+            hash, 
+            10_000_000_000
+        )
+        .await 
+        .map_err(|e| format!("Failed to call eth_getTransactionReceipt: {:?}", e));
+
+    match result {
+        Ok((MultiGetTransactionReceiptResult::Consistent(receipt),)) => {
+            Ok(receipt)
+        },
+        Ok((MultiGetTransactionReceiptResult::Inconsistent(error),)) => {
+            Err(format!("EVM_RPC returned inconsistent results: {:?}", error))
+        },
+        Err(e) => Err(format!("Error calling EVM_RPC: {}", e)),
+    }    
+}
 
 // #[ic_cdk::update(guard = "caller_is_controller")]
 // async fn transfer(to: String, amount: Nat) -> ICRC1TransferResult {
