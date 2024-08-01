@@ -11,8 +11,13 @@ use evm_rpc_canister_types::{
 use candid::Nat;
 use b3_utils::ledger::{ICRCAccount, ICRC1, ICRC1TransferArgs, ICRC1TransferResult};
 
+use hex;
+use num_traits::cast::ToPrimitive;
+
 use crate::ck_eth::receipt; 
 use crate::ck_eth::minter;
+use crate::payments; 
+use crate::transaction_fees;
 
 const MINTER_ADDRESS: &str = "0xb44b5e756a894775fc32eddf3314bb1b1944dc34"; // Minter address for ckSepoliaETH
 const LEDGER: &str = "apia6-jaaaa-aaaar-qabma-cai"; // Canister responsible for keeping track of account balances and facilitating transfer of ckETH among users
@@ -72,7 +77,7 @@ async fn get_receipt(hash: String) -> String {
 
 // Function for verifying the transaction on-chain
 #[ic_cdk::update]
-async fn verify_transaction(hash: String, deposit_principal: String) -> Result<receipt::VerifiedTransactionDetails, String> {
+async fn verify_transaction(hash: String, deposit_principal: String, farm_id: u64, investor_id: u64) -> Result<receipt::VerifiedTransactionDetails, String> {
     // Get the transaction receipt
     let receipt = match eth_get_transaction_receipt(hash.clone()).await {
         Ok(receipt) => receipt,
@@ -99,13 +104,28 @@ async fn verify_transaction(hash: String, deposit_principal: String) -> Result<r
 
     // Verify the principal in the logs matches the deposit principal
     let log_principal = receipt_data.logs.iter()
-        .find(|log| log.topics.get(2).map(|topic| topic.as_str()) == Some(&deposit_principal))
+        .find(|log| log.topics.get(2).map(|topic| topic.as_str()) == Some(&canister_deposit_principal()))
         .ok_or_else(|| "Principal does not match or missing in logs".to_string())?;
 
     // Extract relevant transaction details
-    //  let amount = hex_string_with_0x_to_nat(log_principal.data.clone());
     let amount =  log_principal.data.clone();
     let from_address = receipt_data.from.clone();
+
+    // Convert that amount to f64 
+    let amount_f64 = hex_string_with_0x_to_f64(amount.clone());
+
+    // Deduct 0.5% from the amount (transactional fees) 
+    let deduction = amount_f64 * 0.005; 
+    let _ = transaction_fees::store_transaction_fee(hash.clone(), deduction);
+    let new_amount = amount_f64 - deduction; 
+    
+    let _ = payments::store_investments(
+        0, // change this to farm_id
+        new_amount, 
+        0, // change this to investor_id
+        hash.clone(),  
+        "ckETH".to_string()
+    ); 
 
     Ok(receipt::VerifiedTransactionDetails {
         amount,
@@ -148,6 +168,15 @@ async fn eth_get_transaction_receipt(hash: String) -> Result<GetTransactionRecei
         },
         Err(e) => Err(format!("Error calling EVM_RPC: {}", e)),
     }    
+}
+
+// Helper function to convert a hex string with 0x prefix to f64
+fn hex_string_with_0x_to_f64(hex_string: String) -> f64 {
+    let hex_string = hex_string.trim_start_matches("0x");
+    let bytes = hex::decode(hex_string).expect("Failed to decode hex string");
+    let big_uint = num_bigint::BigUint::from_bytes_be(&bytes);
+    let nat = Nat::from(big_uint);
+    nat.0.to_f64().unwrap_or(f64::MAX)
 }
 
 // ---> ckETH FUNCTIONALITIES <--- // 

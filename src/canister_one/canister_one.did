@@ -128,6 +128,7 @@ service : {
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
   display_investors : () -> (vec Investor) query;
   display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
+  get_all_transaction_fees : () -> (vec record { text; float64 }) query;
   get_farmer_report : (nat64) -> (opt FarmerReport) query;
   get_farms_for_agribusiness : () -> (vec Farmer) query;
   get_investments_by_farm : (nat64) -> (
@@ -145,6 +146,7 @@ service : {
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
   store_investments : (nat64, float64, nat64, text, text) -> (Result_3);
+  store_transaction_fee : (text, float64) -> (Result_3);
   test_frontend : () -> (text) query;
   transfer : (text, nat) -> (Result_4);
   uploaded_farmer_report : (text, nat64, text, text) -> (Result);
@@ -152,7 +154,7 @@ service : {
   verify_farms_agribusiness : (nat64, bool) -> (Result_1);
   verify_investor : (nat64, bool) -> (Result_1);
   verify_supply_agribusiness : (nat64, bool) -> (Result_1);
-  verify_transaction : (text, text) -> (Result_5);
+  verify_transaction : (text, text, nat64, nat64) -> (Result_5);
   who_am_i : () -> (principal);
   withdraw : (nat, text) -> (Result_6);
 }

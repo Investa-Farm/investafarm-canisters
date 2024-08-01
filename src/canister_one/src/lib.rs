@@ -22,7 +22,7 @@ mod farmsagribizmanagement;
 mod payments;
 mod ck_eth;
 mod ck_eth_payments;
-
+mod transaction_fees;
 
 // Frontend Intergration Testing
 #[query]
