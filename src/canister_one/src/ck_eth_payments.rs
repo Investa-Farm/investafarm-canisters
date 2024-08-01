@@ -1,15 +1,18 @@
 use std::str::FromStr;
 
 use candid::Principal;
-use b3_utils::{vec_to_hex_string_with_0x, Subaccount};
-use serde::Serialize;
+use b3_utils::{vec_to_hex_string_with_0x, Subaccount, caller_is_controller};
+use b3_utils::api::{InterCall, CallCycles}; 
 
 use evm_rpc_canister_types::{
     EthSepoliaService, EvmRpcCanister, GetTransactionReceiptResult, MultiGetTransactionReceiptResult, RpcServices
 }; 
 
-use candid::{Nat, CandidType, Deserialize};
-use b3_utils::ledger::{ICRCAccount, ICRC1, ICRC1TransferArgs, ICRC1TransferResult}; 
+use candid::Nat;
+use b3_utils::ledger::{ICRCAccount, ICRC1, ICRC1TransferArgs, ICRC1TransferResult};
+
+use crate::ck_eth::receipt; 
+use crate::ck_eth::minter;
 
 const MINTER_ADDRESS: &str = "0xb44b5e756a894775fc32eddf3314bb1b1944dc34"; // Minter address for ckSepoliaETH
 const LEDGER: &str = "apia6-jaaaa-aaaar-qabma-cai"; // Canister responsible for keeping track of account balances and facilitating transfer of ckETH among users
@@ -18,55 +21,27 @@ const MINTER: &str = "jzenf-aiaaa-aaaar-qaa7q-cai"; // Canister responsible for 
 // they create an ICRC-2 approval on the ledger and call the withdraw_eth on the minter
 
 
-#[derive(Serialize)]
-struct LogEntry {
-    address: String,
-    topics: Vec<String>,
-}
-
-#[derive(Serialize)]
-enum ReceiptWrapper {
-    Ok(TransactionReceiptData),
-    Err(String),
-}
-
-#[derive(Serialize)]
-struct TransactionReceiptData {
-    to: String,
-    status: String, 
-    transaction_hash: String,
-    block_number: String, 
-    from: String,
-    logs: Vec<LogEntry>, 
-}
-
-#[derive(Serialize, CandidType, Deserialize)]
-pub struct VerifiedTransactionDetails {
-    amount: String,
-    from: String,
-}
-
-impl From<GetTransactionReceiptResult> for ReceiptWrapper {
+impl From<GetTransactionReceiptResult> for receipt::ReceiptWrapper {
     fn from(result: GetTransactionReceiptResult) -> Self {
         match result {
             GetTransactionReceiptResult::Ok(receipt) => {
                 if let Some(receipt) = receipt {
-                    ReceiptWrapper::Ok(TransactionReceiptData {
+                    receipt::ReceiptWrapper::Ok(receipt::TransactionReceiptData {
                         to: receipt.to,
                         status: receipt.status.to_string(),
                         transaction_hash: receipt.transactionHash,
                         block_number: receipt.blockNumber.to_string(),
                         from: receipt.from,
-                        logs: receipt.logs.into_iter().map(|log| LogEntry {
+                        logs: receipt.logs.into_iter().map(|log| receipt::LogEntry {
                             address: log.address,
                             topics: log.topics,
                         }).collect(),
                     })
                 } else {
-                    ReceiptWrapper::Err("Receipt is None".to_string())
+                    receipt::ReceiptWrapper::Err("Receipt is None".to_string())
                 }
             },
-            GetTransactionReceiptResult::Err(e) => ReceiptWrapper::Err(format!("Error on Get transaction receipt result: {:?}", e)),
+            GetTransactionReceiptResult::Err(e) => receipt::ReceiptWrapper::Err(format!("Error on Get transaction receipt result: {:?}", e)),
         }
     }
 }
@@ -91,13 +66,13 @@ fn deposit_principal(principal: String) -> String {
 #[ic_cdk::update]
 async fn get_receipt(hash: String) -> String {
     let receipt = eth_get_transaction_receipt(hash).await.unwrap();
-    let wrapper = ReceiptWrapper::from(receipt);
+    let wrapper = receipt::ReceiptWrapper::from(receipt);
     serde_json::to_string(&wrapper).unwrap()
 }
 
 // Function for verifying the transaction on-chain
 #[ic_cdk::update]
-async fn verify_transaction(hash: String, deposit_principal: String) -> Result<VerifiedTransactionDetails, String> {
+async fn verify_transaction(hash: String, deposit_principal: String) -> Result<receipt::VerifiedTransactionDetails, String> {
     // Get the transaction receipt
     let receipt = match eth_get_transaction_receipt(hash.clone()).await {
         Ok(receipt) => receipt,
@@ -132,7 +107,7 @@ async fn verify_transaction(hash: String, deposit_principal: String) -> Result<V
     let amount =  log_principal.data.clone();
     let from_address = receipt_data.from.clone();
 
-    Ok(VerifiedTransactionDetails {
+    Ok(receipt::VerifiedTransactionDetails {
         amount,
         from: from_address,
     })
@@ -202,5 +177,21 @@ async fn transfer(to: String, amount: Nat) -> ICRC1TransferResult {
     ICRC1::from(LEDGER).transfer(transfer_args).await.unwrap()
 }
 
-
+// Withdrawing ckETH from the canister
+#[ic_cdk::update(guard = "caller_is_controller")]
+async fn withdraw(amount: Nat, recipient: String) -> minter::WithdrawalResult {
+    let withdraw = minter::WithdrawalArg{ 
+        amount, 
+        recipient
+    }; 
+    
+    InterCall::from(MINTER)
+    .call(
+        "withdraw_eth", 
+        withdraw, 
+        CallCycles::NoPay
+    )
+    .await
+    .unwrap()
+}
 

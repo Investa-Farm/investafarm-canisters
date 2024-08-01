@@ -630,7 +630,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
 
     // Checking whether the farm name is taken
     let farm_name = &new_farmer.farm_name;
-    REGISTERED_FARMERS.with(|farmers| {
+    let _ = REGISTERED_FARMERS.with(|farmers| {
         if farmers.borrow().contains_key(farm_name) {
             return Err(Error::FarmNameTaken {
                 msg: format!("The farm name '{}' is already taken!", farm_name),

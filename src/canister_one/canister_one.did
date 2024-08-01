@@ -80,6 +80,8 @@ type Result_2 = variant { Ok : nat64; Err : Error };
 type Result_3 = variant { Ok; Err : text };
 type Result_4 = variant { Ok : nat; Err : ICRC1TransferError };
 type Result_5 = variant { Ok : VerifiedTransactionDetails; Err : text };
+type Result_6 = variant { Ok : RetrieveEthRequest; Err : WithdrawalError };
+type RetrieveEthRequest = record { block_index : nat };
 type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
@@ -104,6 +106,12 @@ type SupplyAgriBusiness = record {
   principal_id : principal;
 };
 type VerifiedTransactionDetails = record { from : text; amount : text };
+type WithdrawalError = variant {
+  TemporarilyUnavailable : text;
+  InsufficientAllowance : record { allowance : nat };
+  AmountTooLow : record { min_withdrawal_amount : nat };
+  InsufficientFunds : record { balance : nat };
+};
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
   add_farm_to_agribusiness : (NewFarmer, text) -> (Result);
@@ -146,4 +154,5 @@ service : {
   verify_supply_agribusiness : (nat64, bool) -> (Result_1);
   verify_transaction : (text, text) -> (Result_5);
   who_am_i : () -> (principal);
+  withdraw : (nat, text) -> (Result_6);
 }
