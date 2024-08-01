@@ -1,3 +1,5 @@
+use std::str::FromStr;
+
 use candid::Principal;
 use b3_utils::{vec_to_hex_string_with_0x, Subaccount};
 use serde::Serialize;
@@ -7,13 +9,13 @@ use evm_rpc_canister_types::{
 }; 
 
 use candid::{Nat, CandidType, Deserialize};
-use b3_utils::ledger::{ICRCAccount, ICRC1}; 
+use b3_utils::ledger::{ICRCAccount, ICRC1, ICRC1TransferArgs, ICRC1TransferResult}; 
 
 const MINTER_ADDRESS: &str = "0xb44b5e756a894775fc32eddf3314bb1b1944dc34"; // Minter address for ckSepoliaETH
 const LEDGER: &str = "apia6-jaaaa-aaaar-qabma-cai"; // Canister responsible for keeping track of account balances and facilitating transfer of ckETH among users
 const MINTER: &str = "jzenf-aiaaa-aaaar-qaa7q-cai"; // Canister responsible for minting and burning of ckETH tokens -> When a user deposits ETH to the helper contract on Ethereum...
-// // the MINTER listens for ReceivedEth events and transfers the ckETH tokens to the user's account - and similarly, when a user wants to withdraw ETH from the helper contract on Ethereum...
-// // they create an ICRC-2 approval on the ledger and call the withdraw_eth on the minter
+// the MINTER listens for ReceivedEth events and transfers the ckETH tokens to the user's account - and similarly, when a user wants to withdraw ETH from the helper contract on Ethereum...
+// they create an ICRC-2 approval on the ledger and call the withdraw_eth on the minter
 
 
 #[derive(Serialize)]
@@ -181,6 +183,23 @@ async fn balance() -> Nat {
     let account = ICRCAccount::new(ic_cdk::id(), None);
 
     ICRC1::from(LEDGER).balance_of(account).await.unwrap()
+}
+
+// Transfering a specified amount of ckETH to another account 
+#[ic_cdk::update]
+async fn transfer(to: String, amount: Nat) -> ICRC1TransferResult {
+    let to = ICRCAccount::from_str(&to).unwrap(); 
+    
+    let transfer_args = ICRC1TransferArgs {
+        to, 
+        amount, 
+        from_subaccount: None, 
+        fee: None, 
+        memo: None, 
+        created_at_time: None, 
+    }; 
+
+    ICRC1::from(LEDGER).transfer(transfer_args).await.unwrap()
 }
 
 
