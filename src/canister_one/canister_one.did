@@ -100,6 +100,8 @@ service : {
       Result,
     );
   ask_for_loan : (nat64, nat64) -> (Result);
+  balance : () -> (nat);
+  canister_deposit_principal : () -> (text) query;
   check_loan_expiry : (nat64) -> (Result_1);
   delete_farm : (nat64) -> (Result);
   deposit_principal : (text) -> (text) query;

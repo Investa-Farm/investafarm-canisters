@@ -8,6 +8,7 @@ use ic_cdk::{query, update};
 // use ic_ledger_types::BlockIndex;
 // use crate::icpledger::TransferArgs;
 use candid::Principal;
+use candid::Nat;
 
 mod adminapproval;
 mod askforloan;
