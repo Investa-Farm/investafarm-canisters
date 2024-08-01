@@ -51,7 +51,7 @@ pub fn ask_for_loan(
 }
 
 #[update]
-pub fn check_funding_round_expiry(farm_id: u64) -> Result<bool, entitymanagement::Error> {
+pub fn check_funding_round_expiry(farm_id: u64) -> Result<String, entitymanagement::Error> {
     let farmers = entitymanagement::return_farmers();
     if let Some(farm) = farmers.iter().find(|f| f.id == farm_id) {
         if let (Some(start_time), Some(duration)) = (
@@ -60,13 +60,21 @@ pub fn check_funding_round_expiry(farm_id: u64) -> Result<bool, entitymanagement
         ) {
             let current_time = ic_cdk::api::time();
             let expiry_time = start_time + duration.as_nanos() as u64;
-            return Ok(current_time >= expiry_time);
+            if current_time >= expiry_time {
+                return Ok(format!("Funding round for Farm ID {} has expired", farm_id));
+            } else {
+                return Ok(format!(
+                    "Funding round for Farm ID {} has not expired",
+                    farm_id
+                ));
+            }
         }
     }
     Err(entitymanagement::Error::Error {
         msg: format!("Farm not found or funding round not active!"),
     })
 }
+
 
 #[update]
 pub fn initiate_loan(farm_id: u64) -> Result<(), entitymanagement::Error> {
