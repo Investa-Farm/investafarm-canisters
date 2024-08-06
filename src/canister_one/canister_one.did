@@ -16,6 +16,7 @@ type Farmer = record {
   verified : bool;
   current_loan_ask : opt nat64;
   farm_assets : opt vec record { text; record { nat64; nat64 } };
+  loan_start_time : opt nat64;
   loaned : bool;
   amount_invested : opt nat64;
   funding_round_start_time : opt nat64;
@@ -75,13 +76,9 @@ type NewSupplyAgriBusiness = record {
   items_to_be_supplied : opt vec record { text; record { nat64; nat64 } };
 };
 type Result = variant { Ok : Success; Err : Error };
-type Result_1 = variant { Ok; Err : Error };
+type Result_1 = variant { Ok : text; Err : Error };
 type Result_2 = variant { Ok : nat64; Err : Error };
 type Result_3 = variant { Ok; Err : text };
-type Result_4 = variant { Ok : nat; Err : ICRC1TransferError };
-type Result_5 = variant { Ok : VerifiedTransactionDetails; Err : text };
-type Result_6 = variant { Ok : RetrieveEthRequest; Err : WithdrawalError };
-type RetrieveEthRequest = record { block_index : nat };
 type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
@@ -119,8 +116,6 @@ service : {
       Result,
     );
   ask_for_loan : (nat64, nat64) -> (Result);
-  balance : () -> (nat);
-  canister_deposit_principal : () -> (text) query;
   check_loan_expiry : (nat64) -> (Result_1);
   delete_farm : (nat64) -> (Result);
   deposit_principal : (text) -> (text) query;
@@ -139,6 +134,8 @@ service : {
     ) query;
   get_receipt : (text) -> (text);
   get_remaining_funding_time : (nat64) -> (Result_2) query;
+  get_remaining_loan_maturity_time : (nat64) -> (Result_2) query;
+  initiate_loan : (nat64) -> (Result_3);
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
@@ -146,7 +143,6 @@ service : {
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
   store_investments : (nat64, float64, nat64, text, text) -> (Result_3);
-  store_transaction_fee : (text, float64) -> (Result_3);
   test_frontend : () -> (text) query;
   transfer : (text, nat) -> (Result_4);
   uploaded_farmer_report : (text, nat64, text, text) -> (Result);
@@ -154,7 +150,6 @@ service : {
   verify_farms_agribusiness : (nat64, bool) -> (Result_1);
   verify_investor : (nat64, bool) -> (Result_1);
   verify_supply_agribusiness : (nat64, bool) -> (Result_1);
-  verify_transaction : (text, text, nat64, nat64) -> (Result_5);
   who_am_i : () -> (principal);
   withdraw : (nat, text) -> (Result_6);
 }
