@@ -18,7 +18,7 @@ thread_local! {
 }
 
 #[update] 
-fn store_investments(
+pub fn store_investments(
     farm_id: u64, 
     amount: f64, 
     investor_id: u64, 
