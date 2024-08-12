@@ -1,83 +1,37 @@
 use std::str::FromStr;
 
-use candid::Principal;
-use b3_utils::{vec_to_hex_string_with_0x, Subaccount, caller_is_controller};
-use b3_utils::api::{InterCall, CallCycles}; 
-
+use b3_utils::api::{InterCall, CallCycles};
 use evm_rpc_canister_types::{
-    EthSepoliaService, EvmRpcCanister, GetTransactionReceiptResult, MultiGetTransactionReceiptResult, RpcServices
+    EthSepoliaService, GetTransactionReceiptResult, MultiGetTransactionReceiptResult, RpcServices
 }; 
-
 use candid::Nat;
 use b3_utils::ledger::{ICRCAccount, ICRC1, ICRC1TransferArgs, ICRC1TransferResult};
+use b3_utils::caller_is_controller;
 
-use hex;
-use num_traits::cast::ToPrimitive;
-
-use crate::ck_eth::receipt; 
 use crate::ck_eth::minter;
+use crate::receipt; 
 use crate::payments; 
 use crate::transaction_fees;
 
-const MINTER_ADDRESS: &str = "0xb44b5e756a894775fc32eddf3314bb1b1944dc34"; // Minter address for ckSepoliaETH
-const LEDGER: &str = "apia6-jaaaa-aaaar-qabma-cai"; // Canister responsible for keeping track of account balances and facilitating transfer of ckETH among users
-const MINTER: &str = "jzenf-aiaaa-aaaar-qaa7q-cai"; // Canister responsible for minting and burning of ckETH tokens -> When a user deposits ETH to the helper contract on Ethereum...
-// the MINTER listens for ReceivedEth events and transfers the ckETH tokens to the user's account - and similarly, when a user wants to withdraw ETH from the helper contract on Ethereum...
-// they create an ICRC-2 approval on the ledger and call the withdraw_eth on the minter
+use num_traits::cast::ToPrimitive;
 
+use crate::ck_eth_payments::EVM_RPC; 
 
-impl From<GetTransactionReceiptResult> for receipt::ReceiptWrapper {
-    fn from(result: GetTransactionReceiptResult) -> Self {
-        match result {
-            GetTransactionReceiptResult::Ok(receipt) => {
-                if let Some(receipt) = receipt {
-                    receipt::ReceiptWrapper::Ok(receipt::TransactionReceiptData {
-                        to: receipt.to,
-                        status: receipt.status.to_string(),
-                        transaction_hash: receipt.transactionHash,
-                        block_number: receipt.blockNumber.to_string(),
-                        from: receipt.from,
-                        logs: receipt.logs.into_iter().map(|log| receipt::LogEntry {
-                            address: log.address,
-                            topics: log.topics,
-                        }).collect(),
-                    })
-                } else {
-                    receipt::ReceiptWrapper::Err("Receipt is None".to_string())
-                }
-            },
-            GetTransactionReceiptResult::Err(e) => receipt::ReceiptWrapper::Err(format!("Error on Get transaction receipt result: {:?}", e)),
-        }
-    }
-}
-
-
-pub const EVM_RPC_CANISTER_ID: Principal =
-    Principal::from_slice(b"\x00\x00\x00\x00\x02\x30\x00\xCC\x01\x01"); // 7hfb6-caaaa-aaaar-qadga-cai
-pub const EVM_RPC: EvmRpcCanister = EvmRpcCanister(EVM_RPC_CANISTER_ID);
-
-// Converting the principal object into a subaccount from the principal (necessary for depositing ETH)
-#[ic_cdk::query] 
-fn deposit_principal(principal: String) -> String {
-    let principal = Principal::from_text(principal).unwrap(); 
-    let subaccount = Subaccount::from_principal(principal); 
-
-    let bytes32 = subaccount.to_bytes32().unwrap(); 
-
-    vec_to_hex_string_with_0x(bytes32)
-}
+const USDC_HELPER: &str = "0x70e02abf44e62da8206130cd7ca5279a8f6d6241"; // Helper contract address for ckSepoliaUSDC 
+const USDC_LEDGER: &str = "apia6-jaaaa-aaaar-qabma-cai"; 
+const USDC_MINTER: &str = "jzenf-aiaaa-aaaar-qaa7q-cai";
 
 // Testing get receipt function 
 #[ic_cdk::update]
-async fn get_receipt(hash: String) -> String {
+async fn get_usdc_receipt(hash: String) -> String {
     let receipt = eth_get_transaction_receipt(hash).await.unwrap();
     let wrapper = receipt::ReceiptWrapper::from(receipt);
     serde_json::to_string(&wrapper).unwrap()
 }
 
-// Function for verifying the transaction on-chain
+// Verifying ckUSDC transaction 
 #[ic_cdk::update]
-async fn verify_cketh_transaction(hash: String, farm_id: u64, investor_id: u64) -> Result<receipt::VerifiedTransactionDetails, String> {
+async fn verify_usdc_transaction(hash: String, farm_id: u64, investor_id: u64) -> Result<receipt::VerifiedTransactionDetails, String> {
     // Get the transaction receipt
     let receipt = match eth_get_transaction_receipt(hash.clone()).await {
         Ok(receipt) => receipt,
@@ -98,13 +52,13 @@ async fn verify_cketh_transaction(hash: String, farm_id: u64, investor_id: u64) 
     }
 
     // Verify the 'to' address matches the minter address
-    if receipt_data.to != MINTER_ADDRESS {
+    if receipt_data.to != USDC_HELPER {
         return Err("Minter address does not match".to_string());
     }
 
     // Verify the principal in the logs matches the deposit principal
     let log_principal = receipt_data.logs.iter()
-        .find(|log| log.topics.get(2).map(|topic| topic.as_str()) == Some(&canister_deposit_principal()))
+        .find(|log| log.topics.get(3).map(|topic| topic.as_str()) == Some(&crate::ck_eth_payments::canister_deposit_principal()))
         .ok_or_else(|| "Principal does not match or missing in logs".to_string())?;
 
     // Extract relevant transaction details
@@ -120,11 +74,11 @@ async fn verify_cketh_transaction(hash: String, farm_id: u64, investor_id: u64) 
     let new_amount = amount_f64 - deduction; 
     
     let _ = payments::store_investments(
-        farm_id, // change this to farm_id
+        farm_id,
         new_amount, 
-        investor_id, // change this to investor_id
+        investor_id,
         hash.clone(),  
-        "ckETH".to_string()
+        "ckUSDC".to_string()
     ); 
 
     Ok(receipt::VerifiedTransactionDetails {
@@ -133,16 +87,6 @@ async fn verify_cketh_transaction(hash: String, farm_id: u64, investor_id: u64) 
     })
 }
 
-#[ic_cdk::query] 
-pub fn canister_deposit_principal() -> String {
-    let subaccount = Subaccount::from(ic_cdk::id()); 
-
-    let bytes32 = subaccount.to_bytes32().unwrap(); 
-
-    vec_to_hex_string_with_0x(bytes32)
-}
-
-// Function for getting transaction receipt the transaction hash
 async fn eth_get_transaction_receipt(hash: String) -> Result<GetTransactionReceiptResult, String> {
     // Make the call to the EVM_RPC canister
     let result: Result<(MultiGetTransactionReceiptResult,), String> = EVM_RPC 
@@ -179,19 +123,18 @@ fn hex_string_with_0x_to_f64(hex_string: String) -> f64 {
     nat.0.to_f64().unwrap_or(f64::MAX)
 }
 
-// ---> ckETH FUNCTIONALITIES <--- // 
+// ---> ckUSDC FUNCTIONALITIES <--- //  
 
-// Fetching canister's balance of ckETH
 #[ic_cdk::update]
-async fn cketh_balance() -> Nat {
+async fn ckusdc_balance() -> Nat {
     let account = ICRCAccount::new(ic_cdk::id(), None);
 
-    ICRC1::from(LEDGER).balance_of(account).await.unwrap()
+    ICRC1::from(USDC_LEDGER).balance_of(account).await.unwrap()
 }
 
-// Transfering a specified amount of ckETH to another account 
+// Transfering a specified amount of ckUSDC to another account 
 #[ic_cdk::update]
-async fn cketh_transfer(to: String, amount: Nat) -> ICRC1TransferResult {
+async fn ckusdc_transfer(to: String, amount: Nat) -> ICRC1TransferResult {
     let to = ICRCAccount::from_str(&to).unwrap(); 
     
     let transfer_args = ICRC1TransferArgs {
@@ -203,18 +146,18 @@ async fn cketh_transfer(to: String, amount: Nat) -> ICRC1TransferResult {
         created_at_time: None, 
     }; 
 
-    ICRC1::from(LEDGER).transfer(transfer_args).await.unwrap()
+    ICRC1::from(USDC_LEDGER).transfer(transfer_args).await.unwrap()
 }
 
 // Withdrawing ckETH from the canister
 #[ic_cdk::update(guard = "caller_is_controller")]
-async fn cketh_withdraw(amount: Nat, recipient: String) -> minter::WithdrawalResult {
+async fn ckusdc_withdraw(amount: Nat, recipient: String) -> minter::WithdrawalResult {
     let withdraw = minter::WithdrawalArg{ 
         amount, 
         recipient
     }; 
     
-    InterCall::from(MINTER)
+    InterCall::from(USDC_MINTER)
     .call(
         "withdraw_eth", 
         withdraw, 
@@ -223,4 +166,3 @@ async fn cketh_withdraw(amount: Nat, recipient: String) -> minter::WithdrawalRes
     .await
     .unwrap()
 }
-

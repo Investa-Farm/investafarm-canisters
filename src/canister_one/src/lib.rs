@@ -23,6 +23,7 @@ mod payments;
 mod ck_eth;
 mod ck_eth_payments;
 mod transaction_fees;
+mod ckusdc_payments;
 
 // Frontend Intergration Testing
 #[query]
