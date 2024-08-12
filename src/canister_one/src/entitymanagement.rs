@@ -50,6 +50,7 @@ pub struct Farmer {
     pub loan_maturity: Option<Duration>,                //Time to loan maurity.
     pub funding_round_start_time: Option<u64>,          // Time loan starts
     pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
+    pub loan_start_time: Option<u64>,                   // Time loan starts
 }
 
 /**
@@ -81,6 +82,7 @@ impl Default for Farmer {
             loan_maturity: None,
             funding_round_start_time: None,
             time_for_funding_round_to_expire: None,
+            loan_start_time: None,
         }
     }
 }
@@ -670,6 +672,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         loan_maturity: None,
         time_for_funding_round_to_expire: None,
         funding_round_start_time: None,
+        loan_start_time: None,
     };
 
     //Is this cloning necessary. Seems expensive.
