@@ -1,6 +1,7 @@
 use crate::entitymanagement::Error;
 use crate::entitymanagement::Success;
 use crate::farmerfiles::FarmerReport;
+use crate::entitymanagement::EntityType; 
 use crate::ck_eth::receipt; 
 use crate::ck_eth::minter; 
 // use crate::askforloan;

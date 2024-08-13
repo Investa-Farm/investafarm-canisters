@@ -52,6 +52,19 @@ pub struct Farmer {
     pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
     pub loan_start_time: Option<u64>,                   // Time loan starts
 }
+/** 
+ * Default Implementation for Entity Type [Constructor]
+ * Provides a default implementation for the EntityType struct.
+**/ 
+
+#[derive(CandidType, Deserialize, Serialize)]
+pub enum EntityType {
+    Farmer,
+    Investor,
+    SupplyAgriBusiness,
+    FarmsAgriBusiness,
+    NotRegistered,
+}
 
 /**
 * Default Implementation for Farmer [Constructor]
@@ -1104,4 +1117,40 @@ pub fn log_in() -> Result<Success, Error> {
     });
 
     result
+}
+
+#[query]
+pub fn check_entity_type() -> EntityType {
+    let principal_id = ic_cdk::caller();
+
+    // Check if the principal ID is registered as a farmer
+    if REGISTERED_FARMERS.with(|farmers| {
+        farmers.borrow().values().any(|farmer| farmer.principal_id == principal_id)
+    }) {
+        return EntityType::Farmer;
+    }
+
+    // Check if the principal ID is registered as an investor
+    if REGISTERED_INVESTORS.with(|investors| {
+        investors.borrow().values().any(|investor| investor.principal_id == principal_id)
+    }) {
+        return EntityType::Investor;
+    }
+
+    // Check if the principal ID is registered as a supply agribusiness
+    if REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().any(|agribiz| agribiz.principal_id == principal_id)
+    }) {
+        return EntityType::SupplyAgriBusiness;
+    }
+
+    // Check if the principal ID is registered as a farms agribusiness
+    if REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().any(|agribiz| agribiz.principal_id == principal_id)
+    }) {
+        return EntityType::FarmsAgriBusiness;
+    }
+
+    // If not registered in any category
+    EntityType::NotRegistered
 }
