@@ -46,6 +46,7 @@ fn add_farm_to_agribusiness(
             time_for_funding_round_to_expire: None,
             funding_round_start_time: None,
             loan_start_time: None,
+            token_collateral: None,
         };
 
         let farmer_clone1 = farmer.clone();

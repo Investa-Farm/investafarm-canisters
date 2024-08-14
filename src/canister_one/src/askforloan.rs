@@ -7,13 +7,14 @@ use std::time::Duration;
  *
  * @param farm_id The ID of the farm requesting the loan.
  * @param loan_amount The amount of loan requested.
- * @return Result<entitymanagement::Success, entitymanagement::Error> 
+ * @return Result<entitymanagement::Success, entitymanagement::Error>
  *  Returns a success message if the loan is applied successfully, otherwise returns an error.
  */
 #[update]
 pub fn ask_for_loan(
     farm_id: u64,
     loan_amount: u64,
+    token_collateral: entitymanagement::TokenCollateral,
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
     // Retrieve the list of farmers
     let mut farmers = entitymanagement::return_farmers();
@@ -47,6 +48,8 @@ pub fn ask_for_loan(
         // farm.time_for_funding_round_to_expire = Some(Duration::from_secs(30 * 24 * 60 * 60));
         farm.time_for_funding_round_to_expire = Some(Duration::from_secs(3 * 60)); //(use this to test)
 
+        // Set the token collateral
+        farm.token_collateral = Some(token_collateral);
 
         // Reset the loan_maturity
         farm.loan_maturity = None;
@@ -73,7 +76,7 @@ pub fn ask_for_loan(
  * Checks if the loan's funding round has expired and sets the loan maturity duration if it has.
  *
  * @param farm_id The ID of the farm to check for loan expiry.
- * @return Result<(), entitymanagement::Error> 
+ * @return Result<(), entitymanagement::Error>
  *  Returns Ok(()) if the funding round has expired and loan maturity is set, otherwise returns an error.
  */
 #[update]
@@ -103,7 +106,6 @@ pub fn check_funding_round_expiry(farm_id: u64) -> Result<String, entitymanageme
     })
 }
 
-
 #[update]
 pub fn initiate_loan(farm_id: u64) -> Result<(), entitymanagement::Error> {
     entitymanagement::FARMER_STORAGE.with(|storage| {
@@ -130,7 +132,7 @@ pub fn initiate_loan(farm_id: u64) -> Result<(), entitymanagement::Error> {
  * Gets the remaining time for the funding round.
  *
  * @param farm_id The ID of the farm to get the remaining funding time for.
- * @return Result<u64, entitymanagement::Error> 
+ * @return Result<u64, entitymanagement::Error>
  *  Returns the remaining funding time in seconds if an active funding round is found, otherwise returns an error.
  */
 #[query]
