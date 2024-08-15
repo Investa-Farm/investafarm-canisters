@@ -37,6 +37,7 @@ pub struct Farmer {
     pub farm_name: String,                              //Name of the farm.
     pub farm_description: String,                       //Description of the farm.
     pub farm_assets: Option<Vec<(String, (u64, u64))>>, // Maps supply item names to their quantities
+    pub tags: Option<Vec<String>>,                      // Tags for the farm.
     pub amount_invested: Option<u64>,                   // Amount Invested into the farm.
     pub investors_ids: Principal,                       //Principle IDs of Investors.
     pub verified: bool,                                 //verification status.
@@ -70,6 +71,7 @@ impl Default for Farmer {
             farm_description: String::new(),
             amount_invested: None,
             farm_assets: None,
+            tags: None,
             investors_ids: Principal::anonymous(),
             verified: false,
             agri_business: String::new(),
@@ -113,6 +115,7 @@ pub struct Investor {
     name: String,            //Name of the investor.
     pub verified: bool,      //Indicates if the investor is verified.
     principal_id: Principal, //Investor's principal ID.
+    pub saved_farms: Option<Vec<u64>>,                          // List of saved farm IDs.
 }
 
 /**
@@ -129,6 +132,7 @@ impl Default for Investor {
             name: String::new(),
             verified: false,
             principal_id: Principal::anonymous(),
+            saved_farms: None
         }
     }
 }
