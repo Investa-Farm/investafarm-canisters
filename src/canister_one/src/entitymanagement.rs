@@ -31,11 +31,12 @@ pub type Memory = VirtualMemory<DefaultMemoryImpl>;
 */
 #[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Farmer {
-    pub id: u64,                                        //Unique identifier for the farmer.
-    pub principal_id: Principal,                        //Principal ID of the farmer.
-    pub farmer_name: String,                            //Name of the farmer.
-    pub farm_name: String,                              //Name of the farm.
-    pub farm_description: String,                       //Description of the farm.
+    pub id: u64,                 //Unique identifier for the farmer.
+    pub principal_id: Principal, //Principal ID of the farmer.
+    pub farmer_name: String,     //Name of the farmer.
+    pub farm_name: String,       //Name of the farm.
+    pub farm_description: String,
+    pub token_collateral: Option<TokenCollateral>, //Description of the farm.
     pub farm_assets: Option<Vec<(String, (u64, u64))>>, // Maps supply item names to their quantities
     pub amount_invested: Option<u64>,                   // Amount Invested into the farm.
     pub investors_ids: Principal,                       //Principle IDs of Investors.
@@ -51,6 +52,12 @@ pub struct Farmer {
     pub funding_round_start_time: Option<u64>,          // Time loan starts
     pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
     pub loan_start_time: Option<u64>,                   // Time loan starts
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
+pub struct TokenCollateral {
+    pub currency: String,
+    pub amount: u64,
 }
 
 /**
@@ -83,6 +90,7 @@ impl Default for Farmer {
             funding_round_start_time: None,
             time_for_funding_round_to_expire: None,
             loan_start_time: None,
+            token_collateral: None,
         }
     }
 }
@@ -152,12 +160,12 @@ pub struct NewInvestor {
 */
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct SupplyAgriBusiness {
-    pub id: u64,               //Unique identifier for the business.
+    pub id: u64,                   //Unique identifier for the business.
     pub agribusiness_name: String, //Name of the agricultural business.
     pub items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business
     pub orders: Vec<Order>,
     //supplied_items: Option<SuppliedItems>,
-    pub verified: bool,      //Indicates if the business is verified.
+    pub verified: bool,          //Indicates if the business is verified.
     pub principal_id: Principal, //ID associated with the business's principal.
 }
 
@@ -658,6 +666,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         farm_name: new_farmer.farmer_name.clone(),
         farmer_name: new_farmer.farm_name.clone(),
         farm_description: new_farmer.farm_description,
+        token_collateral: None,
         farm_assets: None,
         amount_invested: None,
         investors_ids: Principal::anonymous(),
@@ -1073,7 +1082,6 @@ pub fn log_in() -> Result<Success, Error> {
 
     result
 }
-
 
 pub fn get_registered_farmers() -> HashMap<String, Farmer> {
     REGISTERED_FARMERS.with(|farmers| farmers.borrow().clone())
