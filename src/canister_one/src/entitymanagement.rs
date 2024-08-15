@@ -564,6 +564,7 @@ thread_local! {
 #[derive(CandidType, Deserialize, Serialize)]
 pub enum Success {
     FarmCreatedSuccesfully { msg: String },
+    FarmAddedSuccesfully { msg: String },
     InvestorRegisteredSuccesfully { msg: String },
     SupplyAgriBizRegisteredSuccesfully { msg: String },
     FarmsAgriBizRegisteredSuccesfully { msg: String },
@@ -585,6 +586,7 @@ pub enum Error {
     MismatchId { msg: String },
     FieldEmpty { msg: String },
     ItemsNotEmpty { msg: String },
+    InvestorNotFound { msg: String }.
     AgribusinessNotFound { msg: String },
     FarmNameTaken { msg: String },
     PrincipalIdAlreadyRegistered { msg: String },
@@ -817,6 +819,49 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
 
     Ok(Success::InvestorRegisteredSuccesfully {
         msg: format!("Investor has been registered succesfully"),
+    })
+}
+
+/**
+ * Function to select a farm and save it for an investor
+ * @param investor_id: u64 - The ID of the investor.
+ * @param farm_id: u64 - The ID of the farm to be saved.
+ */
+ #[update]
+ fn save_farm_for_investor(investor_id: u64, farm_id: u64) -> Result<(), String> {
+     INVESTOR_STORAGE.with(|investors| {
+         let mut investors = investors.borrow_mut();
+         if let Some(investor) = investors.get_mut(&investor_id) {
+             investor.saved_farms.push(farm_id);
+
+            Ok(Success::FarmAddedSuccesfully {
+                msg: format!("Farm has been added succesfully"),
+            })
+         } else {
+
+            Err(Error::InvestorNotFound {
+                msg: format!("Investor not found.!"),
+            });
+         }
+     })
+ }
+
+ /**
+ * Function to display farms saved by a specific investor
+ * @param investor_id: u64 - The ID of the investor.
+ * @return Vec<u64> - A vector of farm IDs saved by the investor.
+ */
+#[query]
+fn get_saved_farms_for_investor(investor_id: u64) -> Result<Vec<u64>, String> {
+    INVESTOR_STORAGE.with(|investors| {
+        let investors = investors.borrow();
+        if let Some(investor) = investors.get(&investor_id) {
+            Ok(investor.saved_farms.clone())
+        } else {
+            Err(Error::InvestorNotFound {
+                msg: format!("Investor not found.!"),
+            });
+        }
     })
 }
 
