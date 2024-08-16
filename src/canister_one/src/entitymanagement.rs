@@ -565,6 +565,7 @@ thread_local! {
 pub enum Success {
     FarmCreatedSuccesfully { msg: String },
     FarmAddedSuccesfully { msg: String },
+    TagDeletedSuccesfully { msg: String },
     InvestorRegisteredSuccesfully { msg: String },
     SupplyAgriBizRegisteredSuccesfully { msg: String },
     FarmsAgriBizRegisteredSuccesfully { msg: String },
@@ -586,7 +587,10 @@ pub enum Error {
     MismatchId { msg: String },
     FieldEmpty { msg: String },
     ItemsNotEmpty { msg: String },
-    InvestorNotFound { msg: String }.
+    InvestorNotFound { msg: String },
+    FarmerNotFound { msg: String },
+    TagAlreadyExists { msg: String },
+    TagNotFound { msg: String },
     AgribusinessNotFound { msg: String },
     FarmNameTaken { msg: String },
     PrincipalIdAlreadyRegistered { msg: String },
@@ -698,6 +702,62 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         msg: format!("Farm has been created succesfully"),
     })
 }
+
+/**
+ * Function to add a tag to a farmer
+ * @param farmer_id: u64 - The ID of the farmer.
+ * @param tag: String - The tag to be added.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+ #[update]
+ pub fn add_tag(farmer_id: u64, tag: String) -> Result<(), String> {
+     FARMER_STORAGE.with(|farmers| {
+         let mut farmers = farmers.borrow_mut();
+         if let Some(farmer) = farmers.get_mut(&farmer_id) {
+             if !farmer.tags.contains(&tag) {
+                 farmer.tags.push(tag);
+                 Ok(())
+             } else {
+                Err(Error::TagAlreadyExists {
+                    msg: format!("Tag already exists!"),
+                });
+             }
+         } else {
+            Err(Error::FarmerNotFound {
+                msg: format!("Farmer not found!"),
+            });
+         }
+     })
+ }
+
+/**
+ * Function to delete a tag from a farmer
+ * @param farmer_id: u64 - The ID of the farmer.
+ * @param tag: String - The tag to be deleted.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+ #[update]
+ pub fn delete_tag(farmer_id: u64, tag: String) -> Result<(), String> {
+     FARMER_STORAGE.with(|farmers| {
+         let mut farmers = farmers.borrow_mut();
+         if let Some(farmer) = farmers.get_mut(&farmer_id) {
+             if let Some(pos) = farmer.tags.iter().position(|x| *x == tag) {
+                 farmer.tags.remove(pos);
+                 Ok(Success::TagDeletedSuccesfully {
+                    msg: format!("Tag has been deleted succesfully"),
+                })
+             } else {
+                Err(Error::TagNotFound {
+                    msg: format!("Tag not found!"),
+                });
+             }
+         } else {
+            Err(Error::FarmerNotFound {
+                msg: format!("Farmer not found!"),
+            });
+         }
+     })
+ }
 
 /**
 * Function: _increament_id
@@ -864,6 +924,8 @@ fn get_saved_farms_for_investor(investor_id: u64) -> Result<Vec<u64>, String> {
         }
     })
 }
+
+
 
 /**
 * Function: register_supply_agribusiness
