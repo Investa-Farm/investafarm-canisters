@@ -52,17 +52,30 @@ pub struct Farmer {
     pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
     pub loan_start_time: Option<u64>,                   // Time loan starts
 }
+
 /** 
  * Default Implementation for Entity Type [Constructor]
  * Provides a default implementation for the EntityType struct.
 **/ 
-
 #[derive(CandidType, Deserialize, Serialize)]
 pub enum EntityType {
     Farmer,
     Investor,
     SupplyAgriBusiness,
     FarmsAgriBusiness,
+    NotRegistered,
+}
+
+/** 
+ * Default Implementation for Entity Details [Constructor]
+ * For returning details of the specific user.
+**/ 
+#[derive(CandidType, Deserialize, Serialize)]
+pub enum EntityDetails {
+    Farmer(Farmer),
+    Investor(Investor),
+    SupplyAgriBusiness(SupplyAgriBusiness),
+    FarmsAgriBusiness(FarmsAgriBusiness),
     NotRegistered,
 }
 
@@ -1119,6 +1132,7 @@ pub fn log_in() -> Result<Success, Error> {
     result
 }
 
+
 #[query]
 pub fn check_entity_type() -> EntityType {
     let principal_id = ic_cdk::caller();
@@ -1153,4 +1167,40 @@ pub fn check_entity_type() -> EntityType {
 
     // If not registered in any category
     EntityType::NotRegistered
+}
+
+#[query]
+pub fn get_entity_details() -> EntityDetails {
+    let principal_id = ic_cdk::caller();
+
+    // Check if the principal ID is registered as a farmer
+    if let Some(farmer) = REGISTERED_FARMERS.with(|farmers| {
+        farmers.borrow().values().find(|farmer| farmer.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::Farmer(farmer);
+    }
+
+    // Check if the principal ID is registered as an investor
+    if let Some(investor) = REGISTERED_INVESTORS.with(|investors| {
+        investors.borrow().values().find(|investor| investor.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::Investor(investor);
+    }
+
+    // Check if the principal ID is registered as a supply agribusiness
+    if let Some(agribusiness) = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().find(|agribiz| agribiz.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::SupplyAgriBusiness(agribusiness);
+    }
+
+    // Check if the principal ID is registered as a farms agribusiness
+    if let Some(agribusiness) = REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().find(|agribiz| agribiz.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::FarmsAgriBusiness(agribusiness);
+    }
+
+    // If not registered in any category
+    EntityDetails::NotRegistered
 }

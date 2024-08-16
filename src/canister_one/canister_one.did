@@ -1,4 +1,11 @@
 type Duration = record { secs : nat64; nanos : nat32 };
+type EntityDetails = variant {
+  FarmsAgriBusiness : FarmsAgriBusiness;
+  NotRegistered;
+  Farmer : Farmer;
+  SupplyAgriBusiness : SupplyAgriBusiness;
+  Investor : Investor;
+};
 type EntityType = variant {
   FarmsAgriBusiness;
   NotRegistered;
@@ -139,6 +146,7 @@ service : {
   display_investors : () -> (vec Investor) query;
   display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
   get_all_transaction_fees : () -> (vec record { text; float64 }) query;
+  get_entity_details : () -> (EntityDetails) query;
   get_farmer_report : (nat64) -> (opt FarmerReport) query;
   get_farms_for_agribusiness : () -> (vec Farmer) query;
   get_investments_by_farm : (nat64) -> (
