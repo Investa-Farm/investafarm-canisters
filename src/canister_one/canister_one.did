@@ -188,7 +188,11 @@ service : () -> {
   store_transaction_fee : (text, float64) -> (Result_1);
   test_frontend : () -> (text) query;
   transfer : (text, nat) -> (Result_5);
+  update_farmer_farm_details : (nat64, text, text) -> (Result_1);
+  update_farms_agribusiness_name : (nat64, text) -> (Result_1);
+  update_investor_name : (nat64, text) -> (Result_1);
   update_order_status : (nat64, OrderStatus, nat64) -> (bool);
+  update_supply_agribusiness_name : (nat64, text) -> (Result_1);
   uploaded_farmer_report : (text, nat64, text, text) -> (Result);
   verify_farmer : (nat64, bool) -> (Result_4);
   verify_farms_agribusiness : (nat64, bool) -> (Result_4);
