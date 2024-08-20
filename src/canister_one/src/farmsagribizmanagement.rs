@@ -32,6 +32,7 @@ fn add_farm_to_agribusiness(
             farm_name: new_farmer.farm_name,
             farm_description: new_farmer.farm_description,
             farm_assets: None,
+            tags: None,
             amount_invested: None,
             investors_ids: Principal::anonymous(),
             verified: true,

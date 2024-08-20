@@ -673,6 +673,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         farmer_name: new_farmer.farm_name.clone(),
         farm_description: new_farmer.farm_description,
         farm_assets: None,
+        tags: Some(Vec::new()),
         amount_invested: None,
         investors_ids: Principal::anonymous(),
         verified: false,
@@ -715,24 +716,29 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
  */
  #[update]
  pub fn add_tag(farmer_id: u64, tag: String) -> Result<(), String> {
-     FARMER_STORAGE.with(|farmers| {
-         let mut farmers = farmers.borrow_mut();
-         if let Some(farmer) = farmers.get_mut(&farmer_id) {
-             if !farmer.tags.contains(&tag) {
-                 farmer.tags.push(tag);
-                 Ok(())
-             } else {
-                Err(Error::TagAlreadyExists {
-                    msg: format!("Tag already exists!"),
-                });
-             }
-         } else {
-            Err(Error::FarmerNotFound {
-                msg: format!("Farmer not found!"),
-            });
-         }
-     })
- }
+    FARMER_STORAGE.with(|farmers| {
+        let mut farmers = farmers.borrow_mut();
+
+        // Check if the farmer exists using get
+        if let Some(farmer) = farmers.get(&farmer_id) {
+            let mut farmer = farmer.clone();  // Clone the farmer to modify
+
+            // Ensure tags is initialized
+            let tags = farmer.tags.get_or_insert_with(Vec::new);
+
+            // If the tag does not exist, add it
+            if !tags.contains(&tag) {
+                tags.push(tag);
+                farmers.insert(farmer_id, farmer);  // Reinsert modified farmer
+                Ok(())
+            } else {
+                Err("Tag already exists!".to_string()) // Convert to String
+            }
+        } else {
+            Err("Farmer not found!".to_string()) // Convert to String
+        }
+    })
+}
 
 /**
  * Function to delete a tag from a farmer
@@ -744,24 +750,28 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
  pub fn delete_tag(farmer_id: u64, tag: String) -> Result<(), String> {
      FARMER_STORAGE.with(|farmers| {
          let mut farmers = farmers.borrow_mut();
-         if let Some(farmer) = farmers.get_mut(&farmer_id) {
-             if let Some(pos) = farmer.tags.iter().position(|x| *x == tag) {
-                 farmer.tags.remove(pos);
-                 Ok(Success::TagDeletedSuccesfully {
-                    msg: format!("Tag has been deleted succesfully"),
-                })
+         
+         // Check if the farmer exists
+         if let Some(mut farmer) = farmers.remove(&farmer_id) {
+             if let Some(pos) = farmer.tags.as_mut().map(|tags| tags.iter().position(|x| *x == tag)) {
+                 if let Some(pos) = pos {
+                     farmer.tags.as_mut().map(|tags| tags.remove(pos));
+                     // Reinsert modified farmer
+                     farmers.insert(farmer_id, farmer);
+                     Ok(())
+                 } else {
+                     Err("Tag not found!".to_string())
+                 }
              } else {
-                Err(Error::TagNotFound {
-                    msg: format!("Tag not found!"),
-                });
+                 Err("Tags not initialized!".to_string())
              }
          } else {
-            Err(Error::FarmerNotFound {
-                msg: format!("Farmer not found!"),
-            });
+             Err("Farmer not found!".to_string())
          }
      })
  }
+ 
+ 
 
 /**
 * Function: _increament_id
@@ -867,6 +877,7 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
         principal_id: new_investor_principal_id,
         name: new_investor.name,
         verified: false,
+        saved_farms: None
     };
 
     let investor_clone1 = investor.clone();
@@ -883,49 +894,6 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
 
     Ok(Success::InvestorRegisteredSuccesfully {
         msg: format!("Investor has been registered succesfully"),
-    })
-}
-
-/**
- * Function to select a farm and save it for an investor
- * @param investor_id: u64 - The ID of the investor.
- * @param farm_id: u64 - The ID of the farm to be saved.
- */
- #[update]
- fn save_farm_for_investor(investor_id: u64, farm_id: u64) -> Result<(), String> {
-     INVESTOR_STORAGE.with(|investors| {
-         let mut investors = investors.borrow_mut();
-         if let Some(investor) = investors.get_mut(&investor_id) {
-             investor.saved_farms.push(farm_id);
-
-            Ok(Success::FarmAddedSuccesfully {
-                msg: format!("Farm has been added succesfully"),
-            })
-         } else {
-
-            Err(Error::InvestorNotFound {
-                msg: format!("Investor not found.!"),
-            });
-         }
-     })
- }
-
- /**
- * Function to display farms saved by a specific investor
- * @param investor_id: u64 - The ID of the investor.
- * @return Vec<u64> - A vector of farm IDs saved by the investor.
- */
-#[query]
-fn get_saved_farms_for_investor(investor_id: u64) -> Result<Vec<u64>, String> {
-    INVESTOR_STORAGE.with(|investors| {
-        let investors = investors.borrow();
-        if let Some(investor) = investors.get(&investor_id) {
-            Ok(investor.saved_farms.clone())
-        } else {
-            Err(Error::InvestorNotFound {
-                msg: format!("Investor not found.!"),
-            });
-        }
     })
 }
 
@@ -1111,113 +1079,6 @@ pub fn return_farms_agribusiness() -> Vec<FarmsAgriBusiness> {
             .collect()
     })
 }
-
-
-// Update functions
-
-/**
- * Function to update farm name and description for a farmer
- * @param farmer_id: u64 - The ID of the farmer.
- * @param new_farm_name: String - The new farm name.
- * @param new_farm_description: String - The new farm description.
- * @return Result<(), String> - A result indicating success or failure.
- */
- #[update]
- pub fn update_farmer_farm_details(farmer_id: u64, new_farm_name: String, new_farm_description: String) -> Result<(), String> {
-     FARMER_STORAGE.with(|farmers| {
-         let mut farmers = farmers.borrow_mut();
-         if let Some(farmer) = farmers.get_mut(&farmer_id) {
-             farmer.farm_name = new_farm_name;
-             farmer.farm_description = new_farm_description;
-             
-             Ok(Success::FarmerUpdateSuccesfull {
-                msg: format!("Farm has been updated succesfully"),
-             })
-
-         } else {
-            Err(Error::FarmerNotFound {
-                msg: format!("Farmer not found!"),
-            });
-         }
-     })
- }
- 
- /**
-  * Function to update the name of an investor
-  * @param investor_id: u64 - The ID of the investor.
-  * @param new_name: String - The new name.
-  * @return Result<(), String> - A result indicating success or failure.
-  */
- #[update]
- pub fn update_investor_name(investor_id: u64, new_name: String) -> Result<(), String> {
-     INVESTOR_STORAGE.with(|investors| {
-         let mut investors = investors.borrow_mut();
-         if let Some(investor) = investors.get_mut(&investor_id) {
-             investor.name = new_name;
-            
-             Ok(Success::InvestorUpdateSuccesfull {
-                msg: format!("Investor has been updated succesfully"),
-             })
-
-         } else {
-            Err(Error::InvestorNotFound {
-                msg: format!("Investor not found.!"),
-            });
-         }
-     })
- }
- 
- /**
-  * Function to update the name of a supply agribusiness
-  * @param supply_agribusiness_id: u64 - The ID of the supply agribusiness.
-  * @param new_name: String - The new name.
-  * @return Result<(), String> - A result indicating success or failure.
-  */
- #[update]
- pub fn update_supply_agribusiness_name(supply_agribusiness_id: u64, new_name: String) -> Result<(), String> {
-     SUPPLY_AGRIBUSINESS_STORAGE.with(|supply_agribusinesses| {
-         let mut supply_agribusinesses = supply_agribusinesses.borrow_mut();
-         if let Some(supply_agribusiness) = supply_agribusinesses.get_mut(&supply_agribusiness_id) {
-             supply_agribusiness.name = new_name;
-             
-             Ok(Success::SupplyAgriBusinessUpdateSuccesfull {
-                msg: format!("Supply Agri Business has been updated succesfully"),
-             })
-
-         } else {
-
-            Err(Error::AgribusinessNotFound {
-                msg: format!("Supply Agri-Business not found!"),
-            });
-         }
-     })
- }
- 
- /**
-  * Function to update the name of a farms agribusiness
-  * @param farms_agribusiness_id: u64 - The ID of the farms agribusiness.
-  * @param new_name: String - The new name.
-  * @return Result<(), String> - A result indicating success or failure.
-  */
- #[update]
- pub fn update_farms_agribusiness_name(farms_agribusiness_id: u64, new_name: String) -> Result<(), String> {
-     FARMS_AGRIBUSINESS_STORAGE.with(|farms_agribusinesses| {
-         let mut farms_agribusinesses = farms_agribusinesses.borrow_mut();
-         if let Some(farms_agribusiness) = farms_agribusinesses.get_mut(&farms_agribusiness_id) {
-             farms_agribusiness.name = new_name;
-             
-             Ok(Success::FarmsAgriBusinessUpdateSuccesfull {
-                msg: format!("Farms Agri Business has been updated succesfully"),
-             })
-
-         } else {
-
-            Err(Error::AgribusinessNotFound {
-                msg: format!("Farms Agri-Business not found!"),
-            });
-         }
-     })
- }
 
 /**
 * Function: log_in
