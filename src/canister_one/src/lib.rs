@@ -20,10 +20,12 @@ mod entitymanagement;
 mod farmerfiles;
 mod farmsagribizmanagement;
 mod payments;
+mod common;
 mod ck_eth;
 mod ck_eth_payments;
 mod transaction_fees;
 // mod supplymanagement;
+mod ckusdc_payments;
 
 // Frontend Intergration Testing
 #[query]
