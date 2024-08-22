@@ -77,7 +77,7 @@ async fn get_receipt(hash: String) -> String {
 
 // Function for verifying the transaction on-chain
 #[ic_cdk::update]
-async fn verify_transaction(hash: String, deposit_principal: String, farm_id: u64, investor_id: u64) -> Result<receipt::VerifiedTransactionDetails, String> {
+async fn verify_transaction(hash: String, farm_id: u64, investor_id: u64) -> Result<receipt::VerifiedTransactionDetails, String> {
     // Get the transaction receipt
     let receipt = match eth_get_transaction_receipt(hash.clone()).await {
         Ok(receipt) => receipt,
@@ -120,9 +120,9 @@ async fn verify_transaction(hash: String, deposit_principal: String, farm_id: u6
     let new_amount = amount_f64 - deduction; 
     
     let _ = payments::store_investments(
-        0, // change this to farm_id
+        farm_id, 
         new_amount, 
-        0, // change this to investor_id
+        investor_id,
         hash.clone(),  
         "ckETH".to_string()
     ); 

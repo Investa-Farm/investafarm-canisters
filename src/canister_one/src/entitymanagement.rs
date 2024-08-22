@@ -1108,3 +1108,116 @@ pub fn log_in() -> Result<Success, Error> {
 
     result
 }
+
+#[query]
+pub fn check_entity_type() -> EntityType {
+    let principal_id = ic_cdk::caller();
+
+    // Check if the principal ID is registered as a farmer
+    if REGISTERED_FARMERS.with(|farmers| {
+        farmers.borrow().values().any(|farmer| farmer.principal_id == principal_id)
+    }) {
+        return EntityType::Farmer;
+    }
+
+    // Check if the principal ID is registered as an investor
+    if REGISTERED_INVESTORS.with(|investors| {
+        investors.borrow().values().any(|investor| investor.principal_id == principal_id)
+    }) {
+        return EntityType::Investor;
+    }
+
+    // Check if the principal ID is registered as a supply agribusiness
+    if REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().any(|agribiz| agribiz.principal_id == principal_id)
+    }) {
+        return EntityType::SupplyAgriBusiness;
+    }
+
+    // Check if the principal ID is registered as a farms agribusiness
+    if REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().any(|agribiz| agribiz.principal_id == principal_id)
+    }) {
+        return EntityType::FarmsAgriBusiness;
+    }
+
+    // If not registered in any category
+    EntityType::NotRegistered
+}
+
+#[query]
+pub fn get_entity_details() -> EntityDetails {
+    let principal_id = ic_cdk::caller();
+
+    // Check if the principal ID is registered as a farmer
+    if let Some(farmer) = REGISTERED_FARMERS.with(|farmers| {
+        farmers.borrow().values().find(|farmer| farmer.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::Farmer(farmer);
+    }
+
+    // Check if the principal ID is registered as an investor
+    if let Some(investor) = REGISTERED_INVESTORS.with(|investors| {
+        investors.borrow().values().find(|investor| investor.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::Investor(investor);
+    }
+
+    // Check if the principal ID is registered as a supply agribusiness
+    if let Some(agribusiness) = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().find(|agribiz| agribiz.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::SupplyAgriBusiness(agribusiness);
+    }
+
+    // Check if the principal ID is registered as a farms agribusiness
+    if let Some(agribusiness) = REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().find(|agribiz| agribiz.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::FarmsAgriBusiness(agribusiness);
+    }
+
+    // If not registered in any category
+    EntityDetails::NotRegistered
+}
+
+/**
+* Function: display_specific_farm
+* Description: Retrieves the details of a specific farm by its ID.
+* @param farm_id: u64 - The ID of the farm to be retrieved
+* @return Result<Farmer, Error> - The Farmer instance if found, or an error message otherwise
+*/
+#[query]
+pub fn display_specific_farm(farm_id: u64) -> Result<Farmer, Error> {
+    FARMER_STORAGE.with(|farmer_storage| {
+        let farmers = farmer_storage.borrow();
+        if let Some(farmer) = farmers.get(&farm_id) {
+            Ok(farmer.clone())
+        } else {
+            Err(Error::MismatchId {
+                msg: format!("No farm found with ID: {}", farm_id),
+            })
+        }
+    })
+}
+
+/**
+* Function: display_specific_investor
+* Description: Retrieves the details of a specific investor by their principal ID.
+* @param principal_id: Principal - The principal ID of the investor to be retrieved
+* @return Result<Investor, Error> - The Investor instance if found, or an error message otherwise
+*/
+#[query]
+pub fn display_specific_investor(principal_id: Principal) -> Result<Investor, Error> {
+    REGISTERED_INVESTORS.with(|investors| {
+        let investors = investors.borrow();
+        for investor in investors.values() {
+            if investor.principal_id == principal_id {
+                return Ok(investor.clone());
+            }
+        }
+        Err(Error::YouAreNotRegistered {
+            msg: format!("No investor found with Principal ID: {}", principal_id),
+        })
+    })
+}
