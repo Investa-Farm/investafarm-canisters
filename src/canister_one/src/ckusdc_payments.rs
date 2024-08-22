@@ -12,8 +12,8 @@ use crate::common::{eth_get_transaction_receipt, hex_string_with_0x_to_f64};
 use crate::ck_eth_payments::EVM_RPC;
 
 const USDC_HELPER: &str = "0x70e02abf44e62da8206130cd7ca5279a8f6d6241";
-const USDC_LEDGER: &str = "apia6-jaaaa-aaaar-qabma-cai";
-const USDC_MINTER: &str = "jzenf-aiaaa-aaaar-qaa7q-cai";
+const USDC_LEDGER: &str = "yfumr-cyaaa-aaaar-qaela-cai";
+const USDC_MINTER: &str = "jzenf-aiaaa-aaaar-qaa7q-cai"; 
 
 #[ic_cdk::update]
 async fn get_usdc_receipt(hash: String) -> String {
