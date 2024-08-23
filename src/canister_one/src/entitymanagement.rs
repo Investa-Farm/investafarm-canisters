@@ -1284,20 +1284,21 @@ pub fn display_specific_investor(principal_id: Principal) -> Result<Investor, Er
 
 /**
 * Function: display_specific_farm_agribusiness
-* Description: Retrieves the details of a specific farms agribusiness by its ID.
-* @param agribusiness_id: u64 - The ID of the farms agribusiness to be retrieved
+* Description: Retrieves the details of a specific farms agribusiness by its principal ID.
+* @param principal_id: Principal - The principal ID of the farms agribusiness to be retrieved
 * @return Result<FarmsAgriBusiness, Error> - The FarmsAgriBusiness instance if found, or an error message otherwise
 */
 #[query]
-pub fn display_specific_farm_agribusiness(agribusiness_id: u64) -> Result<FarmsAgriBusiness, Error> {
-    FARMS_AGRIBUSINESS_STORAGE.with(|agribusiness_storage| {
+pub fn display_specific_farm_agribusiness(principal_id: Principal) -> Result<FarmsAgriBusiness, Error> {
+    REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness_storage| {
         let agribusinesses = agribusiness_storage.borrow();
-        if let Some(agribusiness) = agribusinesses.get(&agribusiness_id) {
-            Ok(agribusiness.clone())
-        } else {
-            Err(Error::MismatchId {
-                msg: format!("No farms agribusiness found with ID: {}", agribusiness_id),
-            })
+        for agribusiness in agribusinesses.values() {
+            if agribusiness.principal_id == principal_id {
+                return Ok(agribusiness.clone());
+            }
         }
+        Err(Error::MismatchId {
+            msg: format!("No farms agribusiness found with principal ID: {}", principal_id),
+        })
     })
 }

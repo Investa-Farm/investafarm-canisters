@@ -190,7 +190,7 @@ service : {
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
   display_investors : () -> (vec Investor) query;
   display_specific_farm : (nat64) -> (Result_4) query;
-  display_specific_farm_agribusiness : (nat64) -> (Result_5) query;
+  display_specific_farm_agribusiness : (principal) -> (Result_5) query;
   display_specific_investor : (principal) -> (Result_6) query;
   display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
   get_all_transaction_fees : () -> (vec record { text; float64 }) query;
