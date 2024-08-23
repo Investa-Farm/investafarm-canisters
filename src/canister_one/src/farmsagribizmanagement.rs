@@ -1,21 +1,32 @@
 // use std::borrow::BorrowMut;
 
-use candid::Principal;
+use candid::{CandidType, Principal};
 use ic_cdk::{query, update};
+use serde::{Deserialize, Serialize};
 
 use crate::entitymanagement::{self};
 
+#[derive(CandidType, Serialize, Deserialize)]
+pub struct RegisterFarm {
+    pub farmer_name: String,      // Farmer Name
+    pub farm_name: String,        // Farm Name
+    pub farm_description: String, // Farm Description
+    pub tags: Option<Vec<String>>, // Optional list of tags associated with the farm
+    pub images: Option<Vec<String>>, // Optional list of image filenames related to the farm
+    pub reports: Option<entitymanagement::Reports>, // Optional reports containing financial and farm-related information
+}
+
 #[update]
 fn add_farm_to_agribusiness(
-    new_farmer: entitymanagement::NewFarmer,
+    new_farm: RegisterFarm,
     agribusiness_name: String,
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
-    if new_farmer.farmer_name.is_empty()
-        || new_farmer.farm_name.is_empty()
-        || new_farmer.farm_description.is_empty()
+    if new_farm.farmer_name.is_empty()
+        || new_farm.farm_name.is_empty()
+        || new_farm.farm_description.is_empty()
     {
         return Err(entitymanagement::Error::FieldEmpty {
-            msg: format!("Kindly ensure all required fieilds are filled!"),
+            msg: format!("Kindly ensure all required fields are filled!"),
         });
     }
 
@@ -28,9 +39,9 @@ fn add_farm_to_agribusiness(
         let farmer = entitymanagement::Farmer {
             id,
             principal_id: ic_cdk::caller(),
-            farmer_name: new_farmer.farmer_name,
-            farm_name: new_farmer.farm_name,
-            farm_description: new_farmer.farm_description,
+            farmer_name: new_farm.farmer_name,
+            farm_name: new_farm.farm_name,
+            farm_description: new_farm.farm_description,
             farm_assets: None,
             amount_invested: None,
             investors_ids: Principal::anonymous(),
@@ -47,9 +58,9 @@ fn add_farm_to_agribusiness(
             funding_round_start_time: None,
             loan_start_time: None,
             token_collateral: None,
-            tags: None, 
-            images: None, 
-            reports: None
+            tags: new_farm.tags,
+            images: new_farm.images,
+            reports: new_farm.reports,
         };
 
         let farmer_clone1 = farmer.clone();
@@ -62,14 +73,12 @@ fn add_farm_to_agribusiness(
         entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
             .with(|farmers| farmers.borrow_mut().insert(id, farmer_clone2));
 
-        Ok(
-            entitymanagement::Success::FarmsAgriBizRegisteredSuccesfully {
-                msg: format!(
-                    "Farm added successfully to the agribusiness: {}",
-                    agribusiness_name
-                ),
-            },
-        )
+        Ok(entitymanagement::Success::FarmsAgriBizRegisteredSuccesfully {
+            msg: format!(
+                "Farm added successfully to the agribusiness: {}",
+                agribusiness_name
+            ),
+        })
     } else {
         Err(entitymanagement::Error::YouAreNotRegistered {
             msg: "You are not registered as a FarmsAgriBusiness, or the agribusiness name is incorrect.".to_string(),

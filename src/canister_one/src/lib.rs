@@ -4,6 +4,7 @@ use crate::entitymanagement::EntityType;
 use crate::entitymanagement::EntityDetails; 
 use crate::entitymanagement::Farmer;  
 use crate::entitymanagement::Investor;  
+use crate::farmsagribizmanagement::RegisterFarm; 
 use crate::ck_eth::receipt; 
 use crate::ck_eth::minter; 
 // use crate::askforloan;

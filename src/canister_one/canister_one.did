@@ -25,6 +25,7 @@ type Error = variant {
   FarmNameTaken : record { msg : text };
   AgribusinessNotFound : record { msg : text };
 };
+type FarmReport = record { title : text; sections : vec Section };
 type Farmer = record {
   id : nat64;
   agri_business : text;
@@ -32,6 +33,7 @@ type Farmer = record {
   current_loan_ask : opt nat64;
   token_collateral : opt TokenCollateral;
   farm_assets : opt vec record { text; record { nat64; nat64 } };
+  tags : opt vec text;
   loan_start_time : opt nat64;
   loaned : bool;
   amount_invested : opt nat64;
@@ -40,6 +42,7 @@ type Farmer = record {
   ifarm_tokens : opt nat64;
   farmer_name : text;
   insured : opt bool;
+  reports : opt Reports;
   publish : bool;
   principal_id : principal;
   farm_name : text;
@@ -47,6 +50,7 @@ type Farmer = record {
   credit_score : opt nat64;
   investors_ids : principal;
   farm_description : text;
+  images : opt vec text;
 };
 type FarmerReport = record {
   farmer_id : nat64;
@@ -60,6 +64,11 @@ type FarmsAgriBusiness = record {
   agribusiness_name : text;
   principal_id : principal;
   total_farmers : nat64;
+};
+type FinancialReport = record {
+  title : text;
+  highlights : vec text;
+  summary : text;
 };
 type ICRC1TransferError = variant {
   GenericError : record { message : text; error_code : nat };
@@ -101,6 +110,10 @@ type Order = record {
   supply_agribusiness_id : nat64;
 };
 type OrderStatus = variant { Complete; Cancelled; Pending };
+type Reports = record {
+  farm : vec FarmReport;
+  financial : vec FinancialReport;
+};
 type Result = variant { Ok : Success; Err : Error };
 type Result_1 = variant { Ok : text; Err : Error };
 type Result_2 = variant { Ok : nat; Err : ICRC1TransferError };
@@ -112,6 +125,11 @@ type Result_7 = variant { Ok; Err : Error };
 type Result_8 = variant { Ok; Err : text };
 type Result_9 = variant { Ok : VerifiedTransactionDetails; Err : text };
 type RetrieveEthRequest = record { block_index : nat };
+type Section = record {
+  title : text;
+  content : opt text;
+  items : opt vec text;
+};
 type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
