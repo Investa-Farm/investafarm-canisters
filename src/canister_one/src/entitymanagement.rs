@@ -52,6 +52,60 @@ pub struct Farmer {
     pub funding_round_start_time: Option<u64>,          // Time loan starts
     pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
     pub loan_start_time: Option<u64>,                   // Time loan starts
+    pub tags: Option<Vec<String>>,                      // Optional list of tags associated with the farm
+    pub images: Option<Vec<String>>,                    // Optional list of image filenames related to the farm
+    pub reports: Option<Reports>,                       // Optional reports containing financial and farm-related information
+}
+
+/**
+* Reports Struct
+* Represents a collection of reports related to the farm.
+* Contains financial and farm-specific reports.
+* @param Defined In-Line
+* @return Reports instance with financial and farm reports.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct Reports {
+    pub financial: Vec<FinancialReport>, // List of financial reports
+    pub farm: Vec<FarmReport>, // List of farm-specific reports
+}
+
+/**
+* FinancialReport Struct
+* Represents a financial report with a title, summary, and highlights.
+* @param Defined In-Line
+* @return FinancialReport instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct FinancialReport {
+    pub title: String, // Title of the financial report
+    pub summary: String, // Summary of the financial report
+    pub highlights: Vec<String>, // Key highlights of the financial report
+}
+
+/**
+* FarmReport Struct
+* Represents a farm report with a title and sections.
+* @param Defined In-Line
+* @return FarmReport instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct FarmReport {
+    pub title: String, // Title of the farm report
+    pub sections: Vec<Section>, // Sections within the farm report
+}
+
+/**
+* Section Struct
+* Represents a section within a report, with a title, content, and optional items.
+* @param Defined In-Line
+* @return Section instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct Section {
+    pub title: String, // Title of the section
+    pub content: Option<String>, // Optional content of the section
+    pub items: Option<Vec<String>>, // Optional list of items in the section
 }
 
 #[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
@@ -117,6 +171,9 @@ impl Default for Farmer {
             time_for_funding_round_to_expire: None,
             loan_start_time: None,
             token_collateral: None,
+            tags: None, 
+            images: None, 
+            reports: None
         }
     }
 }
@@ -708,6 +765,9 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         time_for_funding_round_to_expire: None,
         funding_round_start_time: None,
         loan_start_time: None,
+        tags: None, 
+        images: None, 
+        reports: None
     };
 
     //Is this cloning necessary. Seems expensive.
