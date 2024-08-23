@@ -1,10 +1,11 @@
-use crate::entitymanagement::{Error, Success, NewOrder, Order, OrderStatus};
+use crate::entitymanagement::{Error, Success};
 use crate::farmerfiles::FarmerReport;
 use crate::entitymanagement::EntityType; 
 use crate::entitymanagement::EntityDetails; 
 use crate::entitymanagement::Farmer;  
 use crate::entitymanagement::Investor;  
 use crate::farmsagribizmanagement::RegisterFarm; 
+use crate::entitymanagement::FarmsAgriBusiness; 
 use crate::ck_eth::receipt; 
 use crate::ck_eth::minter; 
 // use crate::askforloan;
