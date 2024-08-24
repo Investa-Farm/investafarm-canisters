@@ -31,11 +31,12 @@ pub type Memory = VirtualMemory<DefaultMemoryImpl>;
 */
 #[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Farmer {
-    pub id: u64,                                        //Unique identifier for the farmer.
-    pub principal_id: Principal,                        //Principal ID of the farmer.
-    pub farmer_name: String,                            //Name of the farmer.
-    pub farm_name: String,                              //Name of the farm.
-    pub farm_description: String,                       //Description of the farm.
+    pub id: u64,                 //Unique identifier for the farmer.
+    pub principal_id: Principal, //Principal ID of the farmer.
+    pub farmer_name: String,     //Name of the farmer.
+    pub farm_name: String,       //Name of the farm.
+    pub farm_description: String,
+    pub token_collateral: Option<TokenCollateral>, //Description of the farm.
     pub farm_assets: Option<Vec<(String, (u64, u64))>>, // Maps supply item names to their quantities
     pub tags: Option<Vec<String>>,                      // Tags for the farm.
     pub amount_invested: Option<u64>,                   // Amount Invested into the farm.
@@ -52,6 +53,92 @@ pub struct Farmer {
     pub funding_round_start_time: Option<u64>,          // Time loan starts
     pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
     pub loan_start_time: Option<u64>,                   // Time loan starts
+    pub tags: Option<Vec<String>>,                      // Optional list of tags associated with the farm
+    pub images: Option<Vec<String>>,                    // Optional list of image filenames related to the farm
+    pub reports: Option<Reports>,                       // Optional reports containing financial and farm-related information
+}
+
+/**
+* Reports Struct
+* Represents a collection of reports related to the farm.
+* Contains financial and farm-specific reports.
+* @param Defined In-Line
+* @return Reports instance with financial and farm reports.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct Reports {
+    pub financial: Vec<FinancialReport>, // List of financial reports
+    pub farm: Vec<FarmReport>, // List of farm-specific reports
+}
+
+/**
+* FinancialReport Struct
+* Represents a financial report with a title, summary, and highlights.
+* @param Defined In-Line
+* @return FinancialReport instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct FinancialReport {
+    pub title: String, // Title of the financial report
+    pub summary: String, // Summary of the financial report
+    pub highlights: Vec<String>, // Key highlights of the financial report
+}
+
+/**
+* FarmReport Struct
+* Represents a farm report with a title and sections.
+* @param Defined In-Line
+* @return FarmReport instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct FarmReport {
+    pub title: String, // Title of the farm report
+    pub sections: Vec<Section>, // Sections within the farm report
+}
+
+/**
+* Section Struct
+* Represents a section within a report, with a title, content, and optional items.
+* @param Defined In-Line
+* @return Section instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct Section {
+    pub title: String, // Title of the section
+    pub content: Option<String>, // Optional content of the section
+    pub items: Option<Vec<String>>, // Optional list of items in the section
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
+pub struct TokenCollateral {
+    pub currency: String,
+    pub amount: u64,
+}
+
+/** 
+ * Default Implementation for Entity Type [Constructor]
+ * Provides a default implementation for the EntityType struct.
+**/ 
+#[derive(CandidType, Deserialize, Serialize)]
+pub enum EntityType {
+    Farmer,
+    Investor,
+    SupplyAgriBusiness,
+    FarmsAgriBusiness,
+    NotRegistered,
+}
+
+/** 
+ * Default Implementation for Entity Details [Constructor]
+ * For returning details of the specific user.
+**/ 
+#[derive(CandidType, Deserialize, Serialize)]
+pub enum EntityDetails {
+    Farmer(Farmer),
+    Investor(Investor),
+    SupplyAgriBusiness(SupplyAgriBusiness),
+    FarmsAgriBusiness(FarmsAgriBusiness),
+    NotRegistered,
 }
 
 /**
@@ -85,6 +172,10 @@ impl Default for Farmer {
             funding_round_start_time: None,
             time_for_funding_round_to_expire: None,
             loan_start_time: None,
+            token_collateral: None,
+            tags: None, 
+            images: None, 
+            reports: None
         }
     }
 }
@@ -156,12 +247,12 @@ pub struct NewInvestor {
 */
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct SupplyAgriBusiness {
-    pub id: u64,               //Unique identifier for the business.
+    pub id: u64,                   //Unique identifier for the business.
     pub agribusiness_name: String, //Name of the agricultural business.
     pub items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business
     pub orders: Vec<Order>,
     //supplied_items: Option<SuppliedItems>,
-    pub verified: bool,      //Indicates if the business is verified.
+    pub verified: bool,          //Indicates if the business is verified.
     pub principal_id: Principal, //ID associated with the business's principal.
 }
 
@@ -583,6 +674,7 @@ pub enum Success {
     CreditScoreAdded { msg: String },
     AppliedForLoanSuccesfully { msg: String },
     ItemsAdded { msg: String },
+    PartialDataStored { msg: String }
 }
 
 // Error Messages
@@ -672,6 +764,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         farm_name: new_farmer.farmer_name.clone(),
         farmer_name: new_farmer.farm_name.clone(),
         farm_description: new_farmer.farm_description,
+        token_collateral: None,
         farm_assets: None,
         tags: Some(Vec::new()),
         amount_invested: None,
@@ -688,6 +781,9 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         time_for_funding_round_to_expire: None,
         funding_round_start_time: None,
         loan_start_time: None,
+        tags: None, 
+        images: None, 
+        reports: None
     };
 
     //Is this cloning necessary. Seems expensive.
@@ -1256,7 +1352,136 @@ pub fn log_in() -> Result<Success, Error> {
     result
 }
 
+#[query]
+pub fn check_entity_type() -> EntityType {
+    let principal_id = ic_cdk::caller();
 
-pub fn get_registered_farmers() -> HashMap<String, Farmer> {
-    REGISTERED_FARMERS.with(|farmers| farmers.borrow().clone())
+    // Check if the principal ID is registered as a farmer
+    if REGISTERED_FARMERS.with(|farmers| {
+        farmers.borrow().values().any(|farmer| farmer.principal_id == principal_id)
+    }) {
+        return EntityType::Farmer;
+    }
+
+    // Check if the principal ID is registered as an investor
+    if REGISTERED_INVESTORS.with(|investors| {
+        investors.borrow().values().any(|investor| investor.principal_id == principal_id)
+    }) {
+        return EntityType::Investor;
+    }
+
+    // Check if the principal ID is registered as a supply agribusiness
+    if REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().any(|agribiz| agribiz.principal_id == principal_id)
+    }) {
+        return EntityType::SupplyAgriBusiness;
+    }
+
+    // Check if the principal ID is registered as a farms agribusiness
+    if REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().any(|agribiz| agribiz.principal_id == principal_id)
+    }) {
+        return EntityType::FarmsAgriBusiness;
+    }
+
+    // If not registered in any category
+    EntityType::NotRegistered
+}
+
+#[query]
+pub fn get_entity_details() -> EntityDetails {
+    let principal_id = ic_cdk::caller();
+
+    // Check if the principal ID is registered as a farmer
+    if let Some(farmer) = REGISTERED_FARMERS.with(|farmers| {
+        farmers.borrow().values().find(|farmer| farmer.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::Farmer(farmer);
+    }
+
+    // Check if the principal ID is registered as an investor
+    if let Some(investor) = REGISTERED_INVESTORS.with(|investors| {
+        investors.borrow().values().find(|investor| investor.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::Investor(investor);
+    }
+
+    // Check if the principal ID is registered as a supply agribusiness
+    if let Some(agribusiness) = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().find(|agribiz| agribiz.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::SupplyAgriBusiness(agribusiness);
+    }
+
+    // Check if the principal ID is registered as a farms agribusiness
+    if let Some(agribusiness) = REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness.borrow().values().find(|agribiz| agribiz.principal_id == principal_id).cloned()
+    }) {
+        return EntityDetails::FarmsAgriBusiness(agribusiness);
+    }
+
+    // If not registered in any category
+    EntityDetails::NotRegistered
+}
+
+/**
+* Function: display_specific_farm
+* Description: Retrieves the details of a specific farm by its ID.
+* @param farm_id: u64 - The ID of the farm to be retrieved
+* @return Result<Farmer, Error> - The Farmer instance if found, or an error message otherwise
+*/
+#[query]
+pub fn display_specific_farm(farm_id: u64) -> Result<Farmer, Error> {
+    FARMER_STORAGE.with(|farmer_storage| {
+        let farmers = farmer_storage.borrow();
+        if let Some(farmer) = farmers.get(&farm_id) {
+            Ok(farmer.clone())
+        } else {
+            Err(Error::MismatchId {
+                msg: format!("No farm found with ID: {}", farm_id),
+            })
+        }
+    })
+}
+
+/**
+* Function: display_specific_investor
+* Description: Retrieves the details of a specific investor by their principal ID.
+* @param principal_id: Principal - The principal ID of the investor to be retrieved
+* @return Result<Investor, Error> - The Investor instance if found, or an error message otherwise
+*/
+#[query]
+pub fn display_specific_investor(principal_id: Principal) -> Result<Investor, Error> {
+    REGISTERED_INVESTORS.with(|investors| {
+        let investors = investors.borrow();
+        for investor in investors.values() {
+            if investor.principal_id == principal_id {
+                return Ok(investor.clone());
+            }
+        }
+        Err(Error::YouAreNotRegistered {
+            msg: format!("No investor found with Principal ID: {}", principal_id),
+        })
+    })
+}
+
+/**
+* Function: display_specific_farm_agribusiness
+* Description: Retrieves the details of a specific farms agribusiness by its principal ID.
+* @param principal_id: Principal - The principal ID of the farms agribusiness to be retrieved
+* @return Result<FarmsAgriBusiness, Error> - The FarmsAgriBusiness instance if found, or an error message otherwise
+*/
+#[query]
+pub fn display_specific_farm_agribusiness(principal_id: Principal) -> Result<FarmsAgriBusiness, Error> {
+    REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness_storage| {
+        let agribusinesses = agribusiness_storage.borrow();
+        for agribusiness in agribusinesses.values() {
+            if agribusiness.principal_id == principal_id {
+                return Ok(agribusiness.clone());
+            }
+        }
+        Err(Error::MismatchId {
+            msg: format!("No farms agribusiness found with principal ID: {}", principal_id),
+        })
+    })
 }
