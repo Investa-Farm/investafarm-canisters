@@ -38,6 +38,7 @@ pub struct Farmer {
     pub farm_description: String,
     pub token_collateral: Option<TokenCollateral>, //Description of the farm.
     pub farm_assets: Option<Vec<(String, (u64, u64))>>, // Maps supply item names to their quantities
+    pub tags: Option<Vec<String>>,                      // Tags for the farm.
     pub amount_invested: Option<u64>,                   // Amount Invested into the farm.
     pub investors_ids: Principal,                       //Principle IDs of Investors.
     pub verified: bool,                                 //verification status.
@@ -159,6 +160,7 @@ impl Default for Farmer {
             farm_description: String::new(),
             amount_invested: None,
             farm_assets: None,
+            tags: None,
             investors_ids: Principal::anonymous(),
             verified: false,
             agri_business: String::new(),
@@ -208,6 +210,7 @@ pub struct Investor {
     name: String,            //Name of the investor.
     pub verified: bool,      //Indicates if the investor is verified.
     principal_id: Principal, //Investor's principal ID.
+    pub saved_farms: Option<Vec<u64>>,                          // List of saved farm IDs.
 }
 
 /**
@@ -224,6 +227,7 @@ impl Default for Investor {
             name: String::new(),
             verified: false,
             principal_id: Principal::anonymous(),
+            saved_farms: None
         }
     }
 }
@@ -655,6 +659,8 @@ thread_local! {
 #[derive(CandidType, Deserialize, Serialize)]
 pub enum Success {
     FarmCreatedSuccesfully { msg: String },
+    FarmAddedSuccesfully { msg: String },
+    TagDeletedSuccesfully { msg: String },
     InvestorRegisteredSuccesfully { msg: String },
     SupplyAgriBizRegisteredSuccesfully { msg: String },
     FarmsAgriBizRegisteredSuccesfully { msg: String },
@@ -662,6 +668,10 @@ pub enum Success {
     InvestorLogInSuccesfull { msg: String },
     SupplyAgriBusinessLogInSuccesfull { msg: String },
     FarmsAgriBusinessLogInSuccesfull { msg: String },
+    FarmerUpdateSuccesfull { msg: String },
+    InvestorUpdateSuccesfull { msg: String },
+    SupplyAgriBusinessUpdateSuccesfull { msg: String },
+    FarmsAgriBusinessUpdateSuccesfull { msg: String },
     FarmPublishedSuccesfully { msg: String },
     FarmDeletedSuccesfully { msg: String },
     ReportUploadedSuccesfully { msg: String },
@@ -677,6 +687,10 @@ pub enum Error {
     MismatchId { msg: String },
     FieldEmpty { msg: String },
     ItemsNotEmpty { msg: String },
+    InvestorNotFound { msg: String },
+    FarmerNotFound { msg: String },
+    TagAlreadyExists { msg: String },
+    TagNotFound { msg: String },
     AgribusinessNotFound { msg: String },
     FarmNameTaken { msg: String },
     PrincipalIdAlreadyRegistered { msg: String },
@@ -737,7 +751,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
                 msg: format!("The farm name '{}' is already taken!", farm_name),
             });
         }
-        Ok(()) // or continue with your logic
+        Ok(())
     });
 
     // Check if principal ID is already registered
@@ -756,6 +770,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         farm_description: new_farmer.farm_description,
         token_collateral: None,
         farm_assets: None,
+        tags: Some(Vec::new()),
         amount_invested: None,
         investors_ids: Principal::anonymous(),
         verified: false,
@@ -794,6 +809,71 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         msg: format!("Farm has been created succesfully"),
     })
 }
+
+/**
+ * Function to add a tag to a farmer
+ * @param farmer_id: u64 - The ID of the farmer.
+ * @param tag: String - The tag to be added.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+ #[update]
+ pub fn add_tag(farmer_id: u64, tag: String) -> Result<(), String> {
+    FARMER_STORAGE.with(|farmers| {
+        let mut farmers = farmers.borrow_mut();
+
+        // Check if the farmer exists using get
+        if let Some(farmer) = farmers.get(&farmer_id) {
+            let mut farmer = farmer.clone();  // Clone the farmer to modify
+
+            // Ensure tags is initialized
+            let tags = farmer.tags.get_or_insert_with(Vec::new);
+
+            // If the tag does not exist, add it
+            if !tags.contains(&tag) {
+                tags.push(tag);
+                farmers.insert(farmer_id, farmer);  // Reinsert modified farmer
+                Ok(())
+            } else {
+                Err("Tag already exists!".to_string()) // Convert to String
+            }
+        } else {
+            Err("Farmer not found!".to_string()) // Convert to String
+        }
+    })
+}
+
+/**
+ * Function to delete a tag from a farmer
+ * @param farmer_id: u64 - The ID of the farmer.
+ * @param tag: String - The tag to be deleted.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+ #[update]
+ pub fn delete_tag(farmer_id: u64, tag: String) -> Result<(), String> {
+     FARMER_STORAGE.with(|farmers| {
+         let mut farmers = farmers.borrow_mut();
+         
+         // Check if the farmer exists
+         if let Some(mut farmer) = farmers.remove(&farmer_id) {
+             if let Some(pos) = farmer.tags.as_mut().map(|tags| tags.iter().position(|x| *x == tag)) {
+                 if let Some(pos) = pos {
+                     farmer.tags.as_mut().map(|tags| tags.remove(pos));
+                     // Reinsert modified farmer
+                     farmers.insert(farmer_id, farmer);
+                     Ok(())
+                 } else {
+                     Err("Tag not found!".to_string())
+                 }
+             } else {
+                 Err("Tags not initialized!".to_string())
+             }
+         } else {
+             Err("Farmer not found!".to_string())
+         }
+     })
+ }
+ 
+ 
 
 /**
 * Function: _increament_id
@@ -899,6 +979,7 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
         principal_id: new_investor_principal_id,
         name: new_investor.name,
         verified: false,
+        saved_farms: None
     };
 
     let investor_clone1 = investor.clone();
@@ -917,6 +998,8 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
         msg: format!("Investor has been registered succesfully"),
     })
 }
+
+
 
 /**
 * Function: register_supply_agribusiness
@@ -1096,6 +1179,105 @@ pub fn return_farms_agribusiness() -> Vec<FarmsAgriBusiness> {
             .iter()
             .map(|(_, item)| item.clone())
             .collect()
+    })
+}
+
+// Update functions
+
+/**
+ * Function to update farm name and description for a farmer
+ * @param farmer_id: u64 - The ID of the farmer.
+ * @param new_farm_name: String - The new farm name.
+ * @param new_farm_description: String - The new farm description.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+ #[update]
+ pub fn update_farmer_farm_details(farmer_id: u64, new_farm_name: String, new_farm_description: String) -> Result<(), String> {
+     FARMER_STORAGE.with(|farmers| {
+         let mut farmers = farmers.borrow_mut();
+ 
+         // Check if the farmer exists
+         if let Some(mut farmer) = farmers.remove(&farmer_id) {
+             // Update fields
+             farmer.farm_name = new_farm_name;
+             farmer.farm_description = new_farm_description;
+ 
+             // Reinsert the updated farmer
+             farmers.insert(farmer_id, farmer);
+ 
+             Ok(())
+         } else {
+             Err("Farmer not found!".to_string())
+         }
+     })
+ }
+ 
+ 
+ 
+
+ /**
+  * Function to update the name of an investor
+  * @param investor_id: u64 - The ID of the investor.
+  * @param new_name: String - The new name.
+  * @return Result<(), String> - A result indicating success or failure.
+  */
+ #[update]
+ pub fn update_investor_name(investor_id: u64, new_name: String) -> Result<(), String> {
+    INVESTOR_STORAGE.with(|investors| {
+        let mut investors = investors.borrow_mut();
+
+        if let Some(mut investor) = investors.remove(&investor_id) {
+            investor.name = new_name;
+            investors.insert(investor_id, investor);
+
+            Ok(()) 
+        } else {
+            Err("Investor not found!".to_string())
+        }
+    })
+}
+
+ /**
+  * Function to update the name of a supply agribusiness
+  * @param supply_agribusiness_id: u64 - The ID of the supply agribusiness.
+  * @param new_name: String - The new name.
+  * @return Result<(), String> - A result indicating success or failure.
+  */
+ #[update]
+ pub fn update_supply_agribusiness_name(supply_agribusiness_id: u64, new_name: String) -> Result<(), String> {
+    SUPPLY_AGRIBUSINESS_STORAGE.with(|supply_agribusinesses| {
+        let mut supply_agribusinesses = supply_agribusinesses.borrow_mut();
+
+        if let Some(mut supply_agribusiness) = supply_agribusinesses.remove(&supply_agribusiness_id) {
+            supply_agribusiness.agribusiness_name = new_name;
+            supply_agribusinesses.insert(supply_agribusiness_id, supply_agribusiness);
+
+            Ok(())
+        } else {
+            Err("Supply Agri-Business not found!".to_string())
+        }
+    })
+}
+
+ /**
+  * Function to update the name of a farms agribusiness
+  * @param farms_agribusiness_id: u64 - The ID of the farms agribusiness.
+  * @param new_name: String - The new name.
+  * @return Result<(), String> - A result indicating success or failure.
+  */
+ #[update]
+ pub fn update_farms_agribusiness_name(farms_agribusiness_id: u64, new_name: String) -> Result<(), String> {
+    FARMS_AGRIBUSINESS_STORAGE.with(|farms_agribusinesses| {
+        let mut farms_agribusinesses = farms_agribusinesses.borrow_mut();
+
+        if let Some(mut farms_agribusiness) = farms_agribusinesses.remove(&farms_agribusiness_id) {
+            farms_agribusiness.agribusiness_name = new_name;
+            farms_agribusinesses.insert(farms_agribusiness_id, farms_agribusiness);
+
+            Ok(()) // Return Ok with unit type
+        } else {
+            Err("Farms Agri-Business not found!".to_string())
+        }
     })
 }
 
