@@ -54,7 +54,9 @@ pub struct Farmer {
     pub loan_start_time: Option<u64>,                   // Time loan starts
     pub tags: Option<Vec<String>>,                      // Optional list of tags associated with the farm
     pub images: Option<Vec<String>>,                    // Optional list of image filenames related to the farm
-    pub reports: Option<Reports>,                       // Optional reports containing financial and farm-related information
+    // pub reports: Option<Reports>,    
+    pub financial_reports: Option<Vec<FinancialReport>>, // Optional financial reports containing financial and farm-related information
+    pub farm_reports: Option<Vec<FarmReport>>            // Optional farm reports containing financial and farm-related information
 }
 
 /**
@@ -173,7 +175,9 @@ impl Default for Farmer {
             token_collateral: None,
             tags: None, 
             images: None, 
-            reports: None
+            // reports: None 
+            financial_reports: None, 
+            farm_reports: None
         }
     }
 }
@@ -768,7 +772,9 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         loan_start_time: None,
         tags: None, 
         images: None, 
-        reports: None
+        // reports: None
+        farm_reports: None, 
+        financial_reports: None
     };
 
     //Is this cloning necessary. Seems expensive.

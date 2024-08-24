@@ -14,7 +14,9 @@ pub struct RegisterFarm {
     pub farm_description: Option<String>, // Farm Description
     pub tags: Option<Vec<String>>,        // Optional list of tags associated with the farm
     pub images: Option<Vec<String>>,      // Optional list of image filenames related to the farm
-    pub reports: Option<entitymanagement::Reports>, // Optional reports containing financial and farm-related information
+    // pub reports: Option<entitymanagement::Reports>, // Optional reports containing financial and farm-related information
+    pub financial_reports: Option<Vec<entitymanagement::FinancialReport>>, 
+    pub farm_reports: Option<Vec<entitymanagement::FarmReport>>
 }
 
 // Temporary storage for partial farm data
@@ -36,7 +38,9 @@ fn register_farm_details(
             farm_description: None,
             tags: None,
             images: None,
-            reports: None,
+            // reports: None,.
+            farm_reports: None, 
+            financial_reports: None
         });
 
         // Update the entry with new data
@@ -77,7 +81,8 @@ fn register_farm_details(
                 token_collateral: None,
                 tags: entry.tags.clone(),
                 images: entry.images.clone(),
-                reports: entry.reports.clone(),
+                financial_reports: entry.financial_reports.clone(),
+                farm_reports: entry.farm_reports.clone()
             };
 
             entitymanagement::FARMER_STORAGE
@@ -109,25 +114,42 @@ fn add_farm_tags(
     farm_id: u64,
     tags: Option<Vec<String>>,
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
-    PARTIAL_FARM_STORAGE.with(|storage| {
-        let mut storage = storage.borrow_mut();
-        let entry = storage.entry(farm_id).or_insert(RegisterFarm {
-            farmer_name: None,
-            farm_name: None,
-            farm_description: None,
-            tags: None,
-            images: None,
-            reports: None,
-        });
+    let caller = ic_cdk::caller();
 
+    // Retrieve the list of farms for the agribusiness
+    let mut farms_for_agribusiness = get_farms_for_agribusiness();
+
+    // Find the specific farm using the farm_id and caller's principal ID
+    if let Some(farm) = farms_for_agribusiness
+        .iter_mut()
+        .find(|f| f.id == farm_id && f.principal_id == caller)
+    {
+        // Update the tags
         if let Some(t) = tags {
-            entry.tags = Some(t);
+            farm.tags = Some(t);
         }
 
+        // Clone the updated farm to store in both storages
+        let farm_clone_1 = farm.clone();
+        let farm_clone_2 = farm.clone();
+
+        // Update the permanent storage
+        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_1));
+
+        entitymanagement::FARMER_STORAGE
+            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_2));
+
+        // Return success message
         Ok(entitymanagement::Success::PartialDataStored {
             msg: "Tags added successfully.".to_string(),
         })
-    })
+    } else {
+        // Return error if the farm is not found
+        Err(entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm not found!"),
+        })
+    }
 }
 
 #[update]
@@ -135,51 +157,107 @@ fn add_farm_images(
     farm_id: u64,
     images: Option<Vec<String>>,
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
-    PARTIAL_FARM_STORAGE.with(|storage| {
-        let mut storage = storage.borrow_mut();
-        let entry = storage.entry(farm_id).or_insert(RegisterFarm {
-            farmer_name: None,
-            farm_name: None,
-            farm_description: None,
-            tags: None,
-            images: None,
-            reports: None,
-        });
+    let caller = ic_cdk::caller();
 
+    let mut farms_for_agribusiness = get_farms_for_agribusiness();
+
+    if let Some(farm) = farms_for_agribusiness
+        .iter_mut()
+        .find(|f| f.id == farm_id && f.principal_id == caller)
+    {
         if let Some(i) = images {
-            entry.images = Some(i);
+            farm.images = Some(i);
         }
+
+        let farm_clone_1 = farm.clone();
+        let farm_clone_2 = farm.clone();
+
+        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_1));
+
+        entitymanagement::FARMER_STORAGE
+            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_2));
 
         Ok(entitymanagement::Success::PartialDataStored {
             msg: "Images added successfully.".to_string(),
         })
-    })
+    } else {
+        Err(entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm not found!"),
+        })
+    }
+}
+
+#[update]
+fn add_financial_reports(
+    farm_id: u64,
+    financial_reports: Option<Vec<entitymanagement::FinancialReport>>,
+) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    let caller = ic_cdk::caller();
+
+    let mut farms_for_agribusiness = get_farms_for_agribusiness();
+
+    if let Some(farm) = farms_for_agribusiness
+        .iter_mut()
+        .find(|f| f.id == farm_id && f.principal_id == caller)
+    {
+        if let Some(reports) = financial_reports {
+            farm.financial_reports = Some(reports);
+        }
+
+        let farm_clone_1 = farm.clone();
+        let farm_clone_2 = farm.clone();
+
+        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_1));
+
+        entitymanagement::FARMER_STORAGE
+            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_2));
+
+        Ok(entitymanagement::Success::PartialDataStored {
+            msg: "Financial reports added successfully.".to_string(),
+        })
+    } else {
+        Err(entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm not found!"),
+        })
+    }
 }
 
 #[update]
 fn add_farm_reports(
     farm_id: u64,
-    reports: Option<entitymanagement::Reports>,
+    farm_reports: Option<Vec<entitymanagement::FarmReport>>,
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
-    PARTIAL_FARM_STORAGE.with(|storage| {
-        let mut storage = storage.borrow_mut();
-        let entry = storage.entry(farm_id).or_insert(RegisterFarm {
-            farmer_name: None,
-            farm_name: None,
-            farm_description: None,
-            tags: None,
-            images: None,
-            reports: None,
-        });
+    let caller = ic_cdk::caller();
 
-        if let Some(r) = reports {
-            entry.reports = Some(r);
+    let mut farms_for_agribusiness = get_farms_for_agribusiness();
+
+    if let Some(farm) = farms_for_agribusiness
+        .iter_mut()
+        .find(|f| f.id == farm_id && f.principal_id == caller)
+    {
+        if let Some(reports) = farm_reports {
+            farm.farm_reports = Some(reports);
         }
 
+        let farm_clone_1 = farm.clone();
+        let farm_clone_2 = farm.clone();
+
+        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_1));
+
+        entitymanagement::FARMER_STORAGE
+            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_2));
+
         Ok(entitymanagement::Success::PartialDataStored {
-            msg: "Reports added successfully.".to_string(),
+            msg: "Farm reports added successfully.".to_string(),
         })
-    })
+    } else {
+        Err(entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm not found!"),
+        })
+    }
 }
 
 #[query]

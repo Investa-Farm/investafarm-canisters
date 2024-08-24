@@ -36,13 +36,14 @@ type Farmer = record {
   tags : opt vec text;
   loan_start_time : opt nat64;
   loaned : bool;
+  farm_reports : opt vec FarmReport;
   amount_invested : opt nat64;
   funding_round_start_time : opt nat64;
   time_for_funding_round_to_expire : opt Duration;
   ifarm_tokens : opt nat64;
   farmer_name : text;
   insured : opt bool;
-  reports : opt Reports;
+  financial_reports : opt vec FinancialReport;
   publish : bool;
   principal_id : principal;
   farm_name : text;
@@ -112,15 +113,12 @@ type Order = record {
 type OrderStatus = variant { Complete; Cancelled; Pending };
 type RegisterFarm = record {
   tags : opt vec text;
+  farm_reports : opt vec FarmReport;
   farmer_name : opt text;
-  reports : opt Reports;
+  financial_reports : opt vec FinancialReport;
   farm_name : opt text;
   farm_description : opt text;
   images : opt vec text;
-};
-type Reports = record {
-  farm : vec FarmReport;
-  financial : vec FinancialReport;
 };
 type Result = variant { Ok : Success; Err : Error };
 type Result_1 = variant { Ok : text; Err : Error };
@@ -175,8 +173,9 @@ type WithdrawalError = variant {
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
   add_farm_images : (nat64, opt vec text) -> (Result);
-  add_farm_reports : (nat64, opt Reports) -> (Result);
+  add_farm_reports : (nat64, opt vec FarmReport) -> (Result);
   add_farm_tags : (nat64, opt vec text) -> (Result);
+  add_financial_reports : (nat64, opt vec FinancialReport) -> (Result);
   ask_for_loan : (nat64, nat64, TokenCollateral) -> (Result);
   canister_deposit_principal : () -> (text) query;
   check_entity_type : () -> (EntityType) query;
