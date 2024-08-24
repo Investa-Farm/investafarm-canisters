@@ -23,7 +23,7 @@ thread_local! {
 }
 
 #[update]
-fn add_farm_chunk(
+fn register_farm_details(
     farm_id: u64,
     new_farm_chunk: RegisterFarm,
     agribusiness_name: String,
@@ -40,23 +40,14 @@ fn add_farm_chunk(
         });
 
         // Update the entry with new data
-        if let Some(farmer_name) = new_farm_chunk.farmer_name {
-            entry.farmer_name = Some(farmer_name);
+        if let Some(name) = new_farm_chunk.farmer_name {
+            entry.farmer_name = Some(name);
         }
-        if let Some(farm_name) = new_farm_chunk.farm_name {
-            entry.farm_name = Some(farm_name);
+        if let Some(name) = new_farm_chunk.farm_name {
+            entry.farm_name = Some(name);
         }
-        if let Some(farm_description) = new_farm_chunk.farm_description {
-            entry.farm_description = Some(farm_description);
-        }
-        if let Some(tags) = new_farm_chunk.tags {
-            entry.tags = Some(tags);
-        }
-        if let Some(images) = new_farm_chunk.images {
-            entry.images = Some(images);
-        }
-        if let Some(reports) = new_farm_chunk.reports {
-            entry.reports = Some(reports);
+        if let Some(description) = new_farm_chunk.farm_description {
+            entry.farm_description = Some(description);
         }
 
         // Check if the entry is complete
@@ -110,6 +101,84 @@ fn add_farm_chunk(
                 msg: "Partial data stored successfully.".to_string(),
             })
         }
+    })
+}
+
+#[update]
+fn add_farm_tags(
+    farm_id: u64,
+    tags: Option<Vec<String>>,
+) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    PARTIAL_FARM_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        let entry = storage.entry(farm_id).or_insert(RegisterFarm {
+            farmer_name: None,
+            farm_name: None,
+            farm_description: None,
+            tags: None,
+            images: None,
+            reports: None,
+        });
+
+        if let Some(t) = tags {
+            entry.tags = Some(t);
+        }
+
+        Ok(entitymanagement::Success::PartialDataStored {
+            msg: "Tags added successfully.".to_string(),
+        })
+    })
+}
+
+#[update]
+fn add_farm_images(
+    farm_id: u64,
+    images: Option<Vec<String>>,
+) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    PARTIAL_FARM_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        let entry = storage.entry(farm_id).or_insert(RegisterFarm {
+            farmer_name: None,
+            farm_name: None,
+            farm_description: None,
+            tags: None,
+            images: None,
+            reports: None,
+        });
+
+        if let Some(i) = images {
+            entry.images = Some(i);
+        }
+
+        Ok(entitymanagement::Success::PartialDataStored {
+            msg: "Images added successfully.".to_string(),
+        })
+    })
+}
+
+#[update]
+fn add_farm_reports(
+    farm_id: u64,
+    reports: Option<entitymanagement::Reports>,
+) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    PARTIAL_FARM_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        let entry = storage.entry(farm_id).or_insert(RegisterFarm {
+            farmer_name: None,
+            farm_name: None,
+            farm_description: None,
+            tags: None,
+            images: None,
+            reports: None,
+        });
+
+        if let Some(r) = reports {
+            entry.reports = Some(r);
+        }
+
+        Ok(entitymanagement::Success::PartialDataStored {
+            msg: "Reports added successfully.".to_string(),
+        })
     })
 }
 

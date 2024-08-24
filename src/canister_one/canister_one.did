@@ -174,7 +174,9 @@ type WithdrawalError = variant {
 };
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
-  add_farm_chunk : (nat64, RegisterFarm, text) -> (Result);
+  add_farm_images : (nat64, opt vec text) -> (Result);
+  add_farm_reports : (nat64, opt Reports) -> (Result);
+  add_farm_tags : (nat64, opt vec text) -> (Result);
   ask_for_loan : (nat64, nat64, TokenCollateral) -> (Result);
   canister_deposit_principal : () -> (text) query;
   check_entity_type : () -> (EntityType) query;
@@ -211,6 +213,7 @@ service : {
   initiate_loan : (nat64) -> (Result_8);
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
+  register_farm_details : (nat64, RegisterFarm, text) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
