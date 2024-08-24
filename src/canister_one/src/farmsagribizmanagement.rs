@@ -5,85 +5,112 @@ use ic_cdk::{query, update};
 use serde::{Deserialize, Serialize};
 
 use crate::entitymanagement::{self};
+use std::collections::HashMap;
 
-#[derive(CandidType, Serialize, Deserialize)]
+#[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct RegisterFarm {
-    pub farmer_name: String,      // Farmer Name
-    pub farm_name: String,        // Farm Name
-    pub farm_description: String, // Farm Description
-    pub tags: Option<Vec<String>>, // Optional list of tags associated with the farm
-    pub images: Option<Vec<String>>, // Optional list of image filenames related to the farm
+    pub farmer_name: Option<String>,      // Farmer Name
+    pub farm_name: Option<String>,        // Farm Name
+    pub farm_description: Option<String>, // Farm Description
+    pub tags: Option<Vec<String>>,        // Optional list of tags associated with the farm
+    pub images: Option<Vec<String>>,      // Optional list of image filenames related to the farm
     pub reports: Option<entitymanagement::Reports>, // Optional reports containing financial and farm-related information
 }
 
+// Temporary storage for partial farm data
+thread_local! {
+    static PARTIAL_FARM_STORAGE: std::cell::RefCell<HashMap<u64, RegisterFarm>> = std::cell::RefCell::new(HashMap::new());
+}
+
 #[update]
-fn add_farm_to_agribusiness(
-    new_farm: RegisterFarm,
+fn add_farm_chunk(
+    farm_id: u64,
+    new_farm_chunk: RegisterFarm,
     agribusiness_name: String,
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
-    if new_farm.farmer_name.is_empty()
-        || new_farm.farm_name.is_empty()
-        || new_farm.farm_description.is_empty()
-    {
-        return Err(entitymanagement::Error::FieldEmpty {
-            msg: format!("Kindly ensure all required fields are filled!"),
+    PARTIAL_FARM_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        let entry = storage.entry(farm_id).or_insert(RegisterFarm {
+            farmer_name: None,
+            farm_name: None,
+            farm_description: None,
+            tags: None,
+            images: None,
+            reports: None,
         });
-    }
 
-    let id = entitymanagement::FARMER_ID.with(|id| entitymanagement::_increament_id(id));
+        // Update the entry with new data
+        if let Some(farmer_name) = new_farm_chunk.farmer_name {
+            entry.farmer_name = Some(farmer_name);
+        }
+        if let Some(farm_name) = new_farm_chunk.farm_name {
+            entry.farm_name = Some(farm_name);
+        }
+        if let Some(farm_description) = new_farm_chunk.farm_description {
+            entry.farm_description = Some(farm_description);
+        }
+        if let Some(tags) = new_farm_chunk.tags {
+            entry.tags = Some(tags);
+        }
+        if let Some(images) = new_farm_chunk.images {
+            entry.images = Some(images);
+        }
+        if let Some(reports) = new_farm_chunk.reports {
+            entry.reports = Some(reports);
+        }
 
-    let response = entitymanagement::_is_principal_id_registered(ic_cdk::caller());
+        // Check if the entry is complete
+        if entry.farmer_name.is_some() && entry.farm_name.is_some() && entry.farm_description.is_some() {
+            // Complete entry, move to permanent storage
+            let complete_farm = entitymanagement::Farmer {
+                id: farm_id,
+                principal_id: ic_cdk::caller(),
+                farmer_name: entry.farmer_name.clone().unwrap(),
+                farm_name: entry.farm_name.clone().unwrap(),
+                farm_description: entry.farm_description.clone().unwrap(),
+                farm_assets: None,
+                amount_invested: None,
+                investors_ids: Principal::anonymous(),
+                verified: true,
+                agri_business: agribusiness_name.clone(),
+                insured: None,
+                publish: false,
+                ifarm_tokens: None,
+                credit_score: None,
+                current_loan_ask: None,
+                loaned: false,
+                loan_maturity: None,
+                time_for_funding_round_to_expire: None,
+                funding_round_start_time: None,
+                loan_start_time: None,
+                token_collateral: None,
+                tags: entry.tags.clone(),
+                images: entry.images.clone(),
+                reports: entry.reports.clone(),
+            };
 
-    if let Err(entitymanagement::Error::PrincipalIdAlreadyRegistered { msg: _ }) = response {
-        // Code for when the principal ID is already registered
-        let farmer = entitymanagement::Farmer {
-            id,
-            principal_id: ic_cdk::caller(),
-            farmer_name: new_farm.farmer_name,
-            farm_name: new_farm.farm_name,
-            farm_description: new_farm.farm_description,
-            farm_assets: None,
-            amount_invested: None,
-            investors_ids: Principal::anonymous(),
-            verified: true,
-            agri_business: agribusiness_name.clone(),
-            insured: None,
-            publish: false,
-            ifarm_tokens: None,
-            credit_score: None,
-            current_loan_ask: None,
-            loaned: false,
-            loan_maturity: None,
-            time_for_funding_round_to_expire: None,
-            funding_round_start_time: None,
-            loan_start_time: None,
-            token_collateral: None,
-            tags: new_farm.tags,
-            images: new_farm.images,
-            reports: new_farm.reports,
-        };
+            entitymanagement::FARMER_STORAGE
+                .with(|farmers| farmers.borrow_mut().insert(farm_id, complete_farm.clone()));
 
-        let farmer_clone1 = farmer.clone();
-        let farmer_clone2 = farmer.clone();
+            entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+                .with(|farmers| farmers.borrow_mut().insert(farm_id, complete_farm));
 
-        entitymanagement::FARMER_STORAGE
-            .with(|farmers| farmers.borrow_mut().insert(id, farmer_clone1));
+            // Remove from partial storage
+            storage.remove(&farm_id);
 
-        // Mapping the farmer to the agribusiness
-        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
-            .with(|farmers| farmers.borrow_mut().insert(id, farmer_clone2));
-
-        Ok(entitymanagement::Success::FarmsAgriBizRegisteredSuccesfully {
-            msg: format!(
-                "Farm added successfully to the agribusiness: {}",
-                agribusiness_name
-            ),
-        })
-    } else {
-        Err(entitymanagement::Error::YouAreNotRegistered {
-            msg: "You are not registered as a FarmsAgriBusiness, or the agribusiness name is incorrect.".to_string(),
-        })
-    }
+            Ok(entitymanagement::Success::FarmsAgriBizRegisteredSuccesfully {
+                msg: format!(
+                    "Farm added successfully to the agribusiness: {}",
+                    agribusiness_name
+                ),
+            })
+        } else {
+            // Entry is not complete yet
+            Ok(entitymanagement::Success::PartialDataStored {
+                msg: "Partial data stored successfully.".to_string(),
+            })
+        }
+    })
 }
 
 #[query]

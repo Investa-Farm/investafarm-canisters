@@ -112,10 +112,10 @@ type Order = record {
 type OrderStatus = variant { Complete; Cancelled; Pending };
 type RegisterFarm = record {
   tags : opt vec text;
-  farmer_name : text;
+  farmer_name : opt text;
   reports : opt Reports;
-  farm_name : text;
-  farm_description : text;
+  farm_name : opt text;
+  farm_description : opt text;
   images : opt vec text;
 };
 type Reports = record {
@@ -150,6 +150,7 @@ type Success = variant {
   FarmPublishedSuccesfully : record { msg : text };
   InvestorRegisteredSuccesfully : record { msg : text };
   FarmCreatedSuccesfully : record { msg : text };
+  PartialDataStored : record { msg : text };
   FarmDeletedSuccesfully : record { msg : text };
   ReportUploadedSuccesfully : record { msg : text };
   AppliedForLoanSuccesfully : record { msg : text };
@@ -173,7 +174,7 @@ type WithdrawalError = variant {
 };
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
-  add_farm_to_agribusiness : (RegisterFarm, text) -> (Result);
+  add_farm_chunk : (nat64, RegisterFarm, text) -> (Result);
   ask_for_loan : (nat64, nat64, TokenCollateral) -> (Result);
   canister_deposit_principal : () -> (text) query;
   check_entity_type : () -> (EntityType) query;

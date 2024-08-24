@@ -664,6 +664,7 @@ pub enum Success {
     CreditScoreAdded { msg: String },
     AppliedForLoanSuccesfully { msg: String },
     ItemsAdded { msg: String },
+    PartialDataStored { msg: String }
 }
 
 // Error Messages
