@@ -16,12 +16,16 @@ type EntityType = variant {
 type Error = variant {
   ItemsNotEmpty : record { msg : text };
   Error : record { msg : text };
+  FarmerNotFound : record { msg : text };
   FieldEmpty : record { msg : text };
   YouAreNotRegistered : record { msg : text };
   ErrorOccured : record { msg : text };
+  TagNotFound : record { msg : text };
   PrincipalIdAlreadyRegistered : record { msg : text };
   NotAuthorized : record { msg : text };
   MismatchId : record { msg : text };
+  TagAlreadyExists : record { msg : text };
+  InvestorNotFound : record { msg : text };
   FarmNameTaken : record { msg : text };
   AgribusinessNotFound : record { msg : text };
 };
@@ -85,6 +89,7 @@ type Investor = record {
   verified : bool;
   name : text;
   principal_id : principal;
+  saved_farms : opt vec nat64;
 };
 type NewFarmer = record {
   farmer_name : text;
@@ -123,6 +128,7 @@ type Reports = record {
   financial : vec FinancialReport;
 };
 type Result = variant { Ok : Success; Err : Error };
+
 type Result_1 = variant { Ok : text; Err : Error };
 type Result_10 = variant { Ok : VerifiedTransactionDetails; Err : text };
 type Result_2 = variant { Ok : nat; Err : ICRC1TransferError };
@@ -140,6 +146,8 @@ type Section = record {
   items : opt vec text;
 };
 type Success = variant {
+  FarmerUpdateSuccesfull : record { msg : text };
+  InvestorUpdateSuccesfull : record { msg : text };
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
   SupplyAgriBusinessLogInSuccesfull : record { msg : text };
@@ -149,9 +157,13 @@ type Success = variant {
   FarmerLogInSuccesfull : record { msg : text };
   FarmPublishedSuccesfully : record { msg : text };
   InvestorRegisteredSuccesfully : record { msg : text };
-  FarmCreatedSuccesfully : record { msg : text };
+  FarmCreatedSuccesfully : record { msg : text }:
+  FarmAddedSuccesfully : record { msg : text };
+  TagDeletedSuccesfully : record { msg : text };
   PartialDataStored : record { msg : text };
   FarmDeletedSuccesfully : record { msg : text };
+  FarmsAgriBusinessUpdateSuccesfull : record { msg : text };
+  SupplyAgriBusinessUpdateSuccesfull : record { msg : text };
   ReportUploadedSuccesfully : record { msg : text };
   AppliedForLoanSuccesfully : record { msg : text };
   InvestorLogInSuccesfull : record { msg : text };
@@ -186,6 +198,7 @@ service : {
   ckusdc_transfer : (text, nat) -> (Result_2);
   ckusdc_withdraw : (nat, text) -> (Result_3);
   delete_farm : (nat64) -> (Result);
+  delete_tag : (nat64, text) -> (Result_1);
   deposit_principal : (text) -> (text) query;
   display_farms : () -> (vec Farmer) query;
   display_farms_agribusinesses : () -> (vec FarmsAgriBusiness) query;
@@ -215,6 +228,23 @@ service : {
   register_investor : (NewInvestor) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
+  store_investments : (nat64, float64, nat64, text, text) -> (Result_1);
+  store_transaction_fee : (text, float64) -> (Result_1);
+  test_frontend : () -> (text) query;
+  transfer : (text, nat) -> (Result_5);
+  update_farmer_farm_details : (nat64, text, text) -> (Result_1);
+  update_farms_agribusiness_name : (nat64, text) -> (Result_1);
+  update_investor_name : (nat64, text) -> (Result_1);
+  update_order_status : (nat64, OrderStatus, nat64) -> (bool);
+  update_supply_agribusiness_name : (nat64, text) -> (Result_1);
+  uploaded_farmer_report : (text, nat64, text, text) -> (Result);
+  verify_farmer : (nat64, bool) -> (Result_4);
+  verify_farms_agribusiness : (nat64, bool) -> (Result_4);
+  verify_investor : (nat64, bool) -> (Result_4);
+  verify_supply_agribusiness : (nat64, bool) -> (Result_4);
+  verify_transaction : (text, text, nat64, nat64) -> (Result_6);
+  who_am_i : () -> (principal);
+  withdraw : (nat, text) -> (Result_7);
   store_investments : (nat64, float64, nat64, text, text) -> (Result_9);
   store_transaction_fee : (text, float64) -> (Result_9);
   test_frontend : () -> (text) query;
