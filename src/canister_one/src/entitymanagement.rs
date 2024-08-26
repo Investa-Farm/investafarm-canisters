@@ -53,7 +53,6 @@ pub struct Farmer {
     pub funding_round_start_time: Option<u64>,          // Time loan starts
     pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
     pub loan_start_time: Option<u64>,                   // Time loan starts
-    pub tags: Option<Vec<String>>,                      // Optional list of tags associated with the farm
     pub images: Option<Vec<String>>,                    // Optional list of image filenames related to the farm
     // pub reports: Option<Reports>,    
     pub financial_reports: Option<Vec<FinancialReport>>, // Optional financial reports containing financial and farm-related information
@@ -175,7 +174,6 @@ impl Default for Farmer {
             time_for_funding_round_to_expire: None,
             loan_start_time: None,
             token_collateral: None,
-            tags: None, 
             images: None, 
             // reports: None 
             financial_reports: None, 
@@ -785,7 +783,6 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         time_for_funding_round_to_expire: None,
         funding_round_start_time: None,
         loan_start_time: None,
-        tags: None, 
         images: None, 
         // reports: None
         farm_reports: None, 
