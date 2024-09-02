@@ -320,6 +320,16 @@ pub enum OrderStatus {
 }
 
 /**
+* Shipping
+* Enum for the shipping of an option.
+*/
+#[derive(Default, Debug, Serialize, Deserialize, CandidType, Clone, PartialEq)]
+pub enum Shipping {
+    #[default]
+    Express
+}
+
+/**
 * Order Struct
 * Represents a Order to the supply agribusiness.
 * @param Defined In-Line
@@ -334,6 +344,7 @@ pub struct Order {
     pub items: HashMap<String, (u64, u64)>, // item_name -> amount
     pub total_price: u64,
     pub status: OrderStatus,
+    pub shipping: Shipping
 }
 
 /**
@@ -353,6 +364,7 @@ impl Default for Order {
             items: HashMap::new(),
             total_price: 0,
             status: OrderStatus::Pending,
+            shipping: Shipping::Express,
         }
     }
 }
