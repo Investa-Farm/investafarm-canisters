@@ -5,7 +5,7 @@ use ic_cdk::{query, update};
 use serde::{Deserialize, Serialize};
 
 use crate::entitymanagement::{self};
-use std::collections::HashMap;
+use std::{cell::RefCell, collections::HashMap};
 
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct RegisterFarm {
@@ -15,14 +15,14 @@ pub struct RegisterFarm {
     pub tags: Option<Vec<String>>,        // Optional list of tags associated with the farm
     pub images: Option<Vec<String>>,      // Optional list of image filenames related to the farm
     // pub reports: Option<entitymanagement::Reports>, // Optional reports containing financial and farm-related information
-    pub financial_reports: Option<Vec<entitymanagement::FinancialReport>>, 
-    pub farm_reports: Option<Vec<entitymanagement::FarmReport>>
+    pub financial_reports: Option<Vec<entitymanagement::FinancialReport>>,
+    pub farm_reports: Option<Vec<entitymanagement::FarmReport>>,
 }
 
 // Temporary storage for partial farm data
 thread_local! {
-    static PARTIAL_FARM_STORAGE: std::cell::RefCell<HashMap<u64, RegisterFarm>> = std::cell::RefCell::new(HashMap::new());
-}
+static PARTIAL_FARM_STORAGE: std::cell::RefCell<HashMap<u64, RegisterFarm>> = std::cell::RefCell::new(HashMap::new());
+static FARM_IMAGES: RefCell<HashMap<u64, Vec<Vec<u8>>>> = RefCell::new(HashMap::new());}
 
 #[update]
 fn register_farm_details(
@@ -39,8 +39,8 @@ fn register_farm_details(
             tags: None,
             images: None,
             // reports: None,.
-            farm_reports: None, 
-            financial_reports: None
+            farm_reports: None,
+            financial_reports: None,
         });
 
         // Update the entry with new data
@@ -55,7 +55,10 @@ fn register_farm_details(
         }
 
         // Check if the entry is complete
-        if entry.farmer_name.is_some() && entry.farm_name.is_some() && entry.farm_description.is_some() {
+        if entry.farmer_name.is_some()
+            && entry.farm_name.is_some()
+            && entry.farm_description.is_some()
+        {
             // Complete entry, move to permanent storage
             let complete_farm = entitymanagement::Farmer {
                 id: farm_id,
@@ -82,7 +85,7 @@ fn register_farm_details(
                 tags: entry.tags.clone(),
                 images: entry.images.clone(),
                 financial_reports: entry.financial_reports.clone(),
-                farm_reports: entry.farm_reports.clone()
+                farm_reports: entry.farm_reports.clone(),
             };
 
             entitymanagement::FARMER_STORAGE
@@ -94,12 +97,14 @@ fn register_farm_details(
             // Remove from partial storage
             storage.remove(&farm_id);
 
-            Ok(entitymanagement::Success::FarmsAgriBizRegisteredSuccesfully {
-                msg: format!(
-                    "Farm added successfully to the agribusiness: {}",
-                    agribusiness_name
-                ),
-            })
+            Ok(
+                entitymanagement::Success::FarmsAgriBizRegisteredSuccesfully {
+                    msg: format!(
+                        "Farm added successfully to the agribusiness: {}",
+                        agribusiness_name
+                    ),
+                },
+            )
         } else {
             // Entry is not complete yet
             Ok(entitymanagement::Success::PartialDataStored {
@@ -155,7 +160,7 @@ fn add_farm_tags(
 #[update]
 fn add_farm_images(
     farm_id: u64,
-    images: Option<Vec<String>>,
+    images: Vec<Vec<u8>>,
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
     let caller = ic_cdk::caller();
 
@@ -165,9 +170,10 @@ fn add_farm_images(
         .iter_mut()
         .find(|f| f.id == farm_id && f.principal_id == caller)
     {
-        if let Some(i) = images {
-            farm.images = Some(i);
-        }
+        FARM_IMAGES.with(|images_storage| {
+            let mut images_storage = images_storage.borrow_mut();
+            images_storage.entry(farm_id).or_default().extend(images);
+        });
 
         let farm_clone_1 = farm.clone();
         let farm_clone_2 = farm.clone();
