@@ -681,6 +681,7 @@ pub enum Success {
     AppliedForLoanSuccesfully { msg: String },
     ItemsAdded { msg: String },
     PartialDataStored { msg: String },
+    ReportDeletedSuccessfully { msg: String }
 }
 
 // Error Messages
