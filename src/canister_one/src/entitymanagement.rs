@@ -31,12 +31,14 @@ pub type Memory = VirtualMemory<DefaultMemoryImpl>;
 */
 #[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Farmer {
-    pub id: u64,                                        //Unique identifier for the farmer.
-    pub principal_id: Principal,                        //Principal ID of the farmer.
-    pub farmer_name: String,                            //Name of the farmer.
-    pub farm_name: String,                              //Name of the farm.
-    pub farm_description: String,                       //Description of the farm.
+    pub id: u64,                 //Unique identifier for the farmer.
+    pub principal_id: Principal, //Principal ID of the farmer.
+    pub farmer_name: String,     //Name of the farmer.
+    pub farm_name: String,       //Name of the farm.
+    pub farm_description: String,
+    pub token_collateral: Option<TokenCollateral>, //Description of the farm.
     pub farm_assets: Option<Vec<(String, (u64, u64))>>, // Maps supply item names to their quantities
+    pub tags: Option<Vec<String>>,                      // Tags for the farm.
     pub amount_invested: Option<u64>,                   // Amount Invested into the farm.
     pub investors_ids: Principal,                       //Principle IDs of Investors.
     pub verified: bool,                                 //verification status.
@@ -50,6 +52,94 @@ pub struct Farmer {
     pub loan_maturity: Option<Duration>,                //Time to loan maurity.
     pub funding_round_start_time: Option<u64>,          // Time loan starts
     pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
+    pub loan_start_time: Option<u64>,                   // Time loan starts
+    pub images: Option<Vec<String>>, // Optional list of image filenames related to the farm
+    // pub reports: Option<Reports>,
+    pub financial_reports: Option<Vec<FinancialReport>>, // Optional financial reports containing financial and farm-related information
+    pub farm_reports: Option<Vec<FarmReport>>, // Optional farm reports containing financial and farm-related information
+}
+
+/**
+* Reports Struct
+* Represents a collection of reports related to the farm.
+* Contains financial and farm-specific reports.
+* @param Defined In-Line
+* @return Reports instance with financial and farm reports.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct Reports {
+    pub financial: Vec<FinancialReport>, // List of financial reports
+    pub farm: Vec<FarmReport>,           // List of farm-specific reports
+}
+
+/**
+* FinancialReport Struct
+* Represents a financial report with a title, summary, and highlights.
+* @param Defined In-Line
+* @return FinancialReport instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct FinancialReport {
+    pub title: String,           // Title of the financial report
+    pub summary: String,         // Summary of the financial report
+    pub highlights: Vec<String>, // Key highlights of the financial report
+}
+
+/**
+* FarmReport Struct
+* Represents a farm report with a title and sections.
+* @param Defined In-Line
+* @return FarmReport instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct FarmReport {
+    pub title: String,          // Title of the farm report
+    pub sections: Vec<Section>, // Sections within the farm report
+}
+
+/**
+* Section Struct
+* Represents a section within a report, with a title, content, and optional items.
+* @param Defined In-Line
+* @return Section instance with specified fields.
+*/
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
+pub struct Section {
+    pub title: String,              // Title of the section
+    pub content: Option<String>,    // Optional content of the section
+    pub items: Option<Vec<String>>, // Optional list of items in the section
+}
+
+#[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Hash, Eq)]
+pub struct TokenCollateral {
+    pub currency: String,
+    pub amount: u64,
+}
+
+/**
+ * Default Implementation for Entity Type [Constructor]
+ * Provides a default implementation for the EntityType struct.
+**/
+#[derive(CandidType, Deserialize, Serialize)]
+pub enum EntityType {
+    Farmer,
+    Investor,
+    SupplyAgriBusiness,
+    FarmsAgriBusiness,
+    NotRegistered,
+}
+
+/**
+ * Default Implementation for Entity Details [Constructor]
+ * For returning details of the specific user.
+**/
+#[derive(CandidType, Deserialize, Serialize)]
+pub enum EntityDetails {
+    Farmer(Farmer),
+    Investor(Investor),
+    SupplyAgriBusiness(SupplyAgriBusiness),
+    FarmsAgriBusiness(FarmsAgriBusiness),
+    NotRegistered,
 }
 
 /**
@@ -69,6 +159,7 @@ impl Default for Farmer {
             farm_description: String::new(),
             amount_invested: None,
             farm_assets: None,
+            tags: None,
             investors_ids: Principal::anonymous(),
             verified: false,
             agri_business: String::new(),
@@ -81,6 +172,12 @@ impl Default for Farmer {
             loan_maturity: None,
             funding_round_start_time: None,
             time_for_funding_round_to_expire: None,
+            loan_start_time: None,
+            token_collateral: None,
+            images: None,
+            // reports: None
+            financial_reports: None,
+            farm_reports: None,
         }
     }
 }
@@ -107,10 +204,11 @@ pub struct NewFarmer {
 */
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct Investor {
-    pub id: u64,             //Unique identifier for the investor.
-    name: String,            //Name of the investor.
-    pub verified: bool,      //Indicates if the investor is verified.
-    principal_id: Principal, //Investor's principal ID.
+    pub id: u64,                       //Unique identifier for the investor.
+    name: String,                      //Name of the investor.
+    pub verified: bool,                //Indicates if the investor is verified.
+    principal_id: Principal,           //Investor's principal ID.
+    pub saved_farms: Option<Vec<u64>>, // List of saved farm IDs.
 }
 
 /**
@@ -127,6 +225,7 @@ impl Default for Investor {
             name: String::new(),
             verified: false,
             principal_id: Principal::anonymous(),
+            saved_farms: None,
         }
     }
 }
@@ -150,12 +249,12 @@ pub struct NewInvestor {
 */
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct SupplyAgriBusiness {
-    pub id: u64,               //Unique identifier for the business.
+    pub id: u64,                   //Unique identifier for the business.
     pub agribusiness_name: String, //Name of the agricultural business.
     pub items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business
     pub orders: Vec<Order>,
     //supplied_items: Option<SuppliedItems>,
-    pub verified: bool,      //Indicates if the business is verified.
+    pub verified: bool,          //Indicates if the business is verified.
     pub principal_id: Principal, //ID associated with the business's principal.
 }
 
@@ -552,12 +651,18 @@ thread_local! {
 
     // Mapping farmer agri business with their names
     pub static REGISTERED_FARMS_AGRIBUSINESS: RefCell<HashMap<String, FarmsAgriBusiness>> = RefCell::new(HashMap::new());
+
+    // Implementing file storage
+    pub static FILE_STORAGE: RefCell<HashMap<String, Vec<u8>>> = RefCell::new(HashMap::new());
+
 }
 
 // Success Messages
 #[derive(CandidType, Deserialize, Serialize)]
 pub enum Success {
     FarmCreatedSuccesfully { msg: String },
+    FarmAddedSuccesfully { msg: String },
+    TagDeletedSuccesfully { msg: String },
     InvestorRegisteredSuccesfully { msg: String },
     SupplyAgriBizRegisteredSuccesfully { msg: String },
     FarmsAgriBizRegisteredSuccesfully { msg: String },
@@ -565,12 +670,18 @@ pub enum Success {
     InvestorLogInSuccesfull { msg: String },
     SupplyAgriBusinessLogInSuccesfull { msg: String },
     FarmsAgriBusinessLogInSuccesfull { msg: String },
+    FarmerUpdateSuccesfull { msg: String },
+    InvestorUpdateSuccesfull { msg: String },
+    SupplyAgriBusinessUpdateSuccesfull { msg: String },
+    FarmsAgriBusinessUpdateSuccesfull { msg: String },
     FarmPublishedSuccesfully { msg: String },
     FarmDeletedSuccesfully { msg: String },
     ReportUploadedSuccesfully { msg: String },
     CreditScoreAdded { msg: String },
     AppliedForLoanSuccesfully { msg: String },
     ItemsAdded { msg: String },
+    PartialDataStored { msg: String },
+    ReportDeletedSuccessfully { msg: String }
 }
 
 // Error Messages
@@ -579,6 +690,10 @@ pub enum Error {
     MismatchId { msg: String },
     FieldEmpty { msg: String },
     ItemsNotEmpty { msg: String },
+    InvestorNotFound { msg: String },
+    FarmerNotFound { msg: String },
+    TagAlreadyExists { msg: String },
+    TagNotFound { msg: String },
     AgribusinessNotFound { msg: String },
     FarmNameTaken { msg: String },
     PrincipalIdAlreadyRegistered { msg: String },
@@ -586,6 +701,7 @@ pub enum Error {
     NotAuthorized { msg: String },
     ErrorOccured { msg: String },
     Error { msg: String },
+    FileNotFound { msg: String },
 }
 
 /** Login function
@@ -639,7 +755,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
                 msg: format!("The farm name '{}' is already taken!", farm_name),
             });
         }
-        Ok(()) // or continue with your logic
+        Ok(())
     });
 
     // Check if principal ID is already registered
@@ -656,7 +772,9 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         farm_name: new_farmer.farmer_name.clone(),
         farmer_name: new_farmer.farm_name.clone(),
         farm_description: new_farmer.farm_description,
+        token_collateral: None,
         farm_assets: None,
+        tags: Some(Vec::new()),
         amount_invested: None,
         investors_ids: Principal::anonymous(),
         verified: false,
@@ -670,6 +788,11 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         loan_maturity: None,
         time_for_funding_round_to_expire: None,
         funding_round_start_time: None,
+        loan_start_time: None,
+        images: None,
+        // reports: None
+        farm_reports: None,
+        financial_reports: None,
     };
 
     //Is this cloning necessary. Seems expensive.
@@ -687,6 +810,73 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
 
     Ok(Success::FarmCreatedSuccesfully {
         msg: format!("Farm has been created succesfully"),
+    })
+}
+
+/**
+ * Function to add a tag to a farmer
+ * @param farmer_id: u64 - The ID of the farmer.
+ * @param tag: String - The tag to be added.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+#[update]
+pub fn add_tag(farmer_id: u64, tag: String) -> Result<(), String> {
+    FARMER_STORAGE.with(|farmers| {
+        let mut farmers = farmers.borrow_mut();
+
+        // Check if the farmer exists using get
+        if let Some(farmer) = farmers.get(&farmer_id) {
+            let mut farmer = farmer.clone(); // Clone the farmer to modify
+
+            // Ensure tags is initialized
+            let tags = farmer.tags.get_or_insert_with(Vec::new);
+
+            // If the tag does not exist, add it
+            if !tags.contains(&tag) {
+                tags.push(tag);
+                farmers.insert(farmer_id, farmer); // Reinsert modified farmer
+                Ok(())
+            } else {
+                Err("Tag already exists!".to_string()) // Convert to String
+            }
+        } else {
+            Err("Farmer not found!".to_string()) // Convert to String
+        }
+    })
+}
+
+/**
+ * Function to delete a tag from a farmer
+ * @param farmer_id: u64 - The ID of the farmer.
+ * @param tag: String - The tag to be deleted.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+#[update]
+pub fn delete_tag(farmer_id: u64, tag: String) -> Result<(), String> {
+    FARMER_STORAGE.with(|farmers| {
+        let mut farmers = farmers.borrow_mut();
+
+        // Check if the farmer exists
+        if let Some(mut farmer) = farmers.remove(&farmer_id) {
+            if let Some(pos) = farmer
+                .tags
+                .as_mut()
+                .map(|tags| tags.iter().position(|x| *x == tag))
+            {
+                if let Some(pos) = pos {
+                    farmer.tags.as_mut().map(|tags| tags.remove(pos));
+                    // Reinsert modified farmer
+                    farmers.insert(farmer_id, farmer);
+                    Ok(())
+                } else {
+                    Err("Tag not found!".to_string())
+                }
+            } else {
+                Err("Tags not initialized!".to_string())
+            }
+        } else {
+            Err("Farmer not found!".to_string())
+        }
     })
 }
 
@@ -794,6 +984,7 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
         principal_id: new_investor_principal_id,
         name: new_investor.name,
         verified: false,
+        saved_farms: None,
     };
 
     let investor_clone1 = investor.clone();
@@ -994,6 +1185,113 @@ pub fn return_farms_agribusiness() -> Vec<FarmsAgriBusiness> {
     })
 }
 
+// Update functions
+
+/**
+ * Function to update farm name and description for a farmer
+ * @param farmer_id: u64 - The ID of the farmer.
+ * @param new_farm_name: String - The new farm name.
+ * @param new_farm_description: String - The new farm description.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+#[update]
+pub fn update_farmer_farm_details(
+    farmer_id: u64,
+    new_farm_name: String,
+    new_farm_description: String,
+) -> Result<(), String> {
+    FARMER_STORAGE.with(|farmers| {
+        let mut farmers = farmers.borrow_mut();
+
+        // Check if the farmer exists
+        if let Some(mut farmer) = farmers.remove(&farmer_id) {
+            // Update fields
+            farmer.farm_name = new_farm_name;
+            farmer.farm_description = new_farm_description;
+
+            // Reinsert the updated farmer
+            farmers.insert(farmer_id, farmer);
+
+            Ok(())
+        } else {
+            Err("Farmer not found!".to_string())
+        }
+    })
+}
+
+/**
+ * Function to update the name of an investor
+ * @param investor_id: u64 - The ID of the investor.
+ * @param new_name: String - The new name.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+#[update]
+pub fn update_investor_name(investor_id: u64, new_name: String) -> Result<(), String> {
+    INVESTOR_STORAGE.with(|investors| {
+        let mut investors = investors.borrow_mut();
+
+        if let Some(mut investor) = investors.remove(&investor_id) {
+            investor.name = new_name;
+            investors.insert(investor_id, investor);
+
+            Ok(())
+        } else {
+            Err("Investor not found!".to_string())
+        }
+    })
+}
+
+/**
+ * Function to update the name of a supply agribusiness
+ * @param supply_agribusiness_id: u64 - The ID of the supply agribusiness.
+ * @param new_name: String - The new name.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+#[update]
+pub fn update_supply_agribusiness_name(
+    supply_agribusiness_id: u64,
+    new_name: String,
+) -> Result<(), String> {
+    SUPPLY_AGRIBUSINESS_STORAGE.with(|supply_agribusinesses| {
+        let mut supply_agribusinesses = supply_agribusinesses.borrow_mut();
+
+        if let Some(mut supply_agribusiness) = supply_agribusinesses.remove(&supply_agribusiness_id)
+        {
+            supply_agribusiness.agribusiness_name = new_name;
+            supply_agribusinesses.insert(supply_agribusiness_id, supply_agribusiness);
+
+            Ok(())
+        } else {
+            Err("Supply Agri-Business not found!".to_string())
+        }
+    })
+}
+
+/**
+ * Function to update the name of a farms agribusiness
+ * @param farms_agribusiness_id: u64 - The ID of the farms agribusiness.
+ * @param new_name: String - The new name.
+ * @return Result<(), String> - A result indicating success or failure.
+ */
+#[update]
+pub fn update_farms_agribusiness_name(
+    farms_agribusiness_id: u64,
+    new_name: String,
+) -> Result<(), String> {
+    FARMS_AGRIBUSINESS_STORAGE.with(|farms_agribusinesses| {
+        let mut farms_agribusinesses = farms_agribusinesses.borrow_mut();
+
+        if let Some(mut farms_agribusiness) = farms_agribusinesses.remove(&farms_agribusiness_id) {
+            farms_agribusiness.agribusiness_name = new_name;
+            farms_agribusinesses.insert(farms_agribusiness_id, farms_agribusiness);
+
+            Ok(()) // Return Ok with unit type
+        } else {
+            Err("Farms Agri-Business not found!".to_string())
+        }
+    })
+}
+
 /**
 * Function: log_in
 * Description: Logs in the caller based on their principal ID, determining their registered role.
@@ -1071,7 +1369,203 @@ pub fn log_in() -> Result<Success, Error> {
     result
 }
 
+#[query]
+pub fn check_entity_type() -> EntityType {
+    let principal_id = ic_cdk::caller();
 
-pub fn get_registered_farmers() -> HashMap<String, Farmer> {
-    REGISTERED_FARMERS.with(|farmers| farmers.borrow().clone())
+    // Check if the principal ID is registered as a farmer
+    if REGISTERED_FARMERS.with(|farmers| {
+        farmers
+            .borrow()
+            .values()
+            .any(|farmer| farmer.principal_id == principal_id)
+    }) {
+        return EntityType::Farmer;
+    }
+
+    // Check if the principal ID is registered as an investor
+    if REGISTERED_INVESTORS.with(|investors| {
+        investors
+            .borrow()
+            .values()
+            .any(|investor| investor.principal_id == principal_id)
+    }) {
+        return EntityType::Investor;
+    }
+
+    // Check if the principal ID is registered as a supply agribusiness
+    if REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness
+            .borrow()
+            .values()
+            .any(|agribiz| agribiz.principal_id == principal_id)
+    }) {
+        return EntityType::SupplyAgriBusiness;
+    }
+
+    // Check if the principal ID is registered as a farms agribusiness
+    if REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness
+            .borrow()
+            .values()
+            .any(|agribiz| agribiz.principal_id == principal_id)
+    }) {
+        return EntityType::FarmsAgriBusiness;
+    }
+
+    // If not registered in any category
+    EntityType::NotRegistered
+}
+
+#[query]
+pub fn get_entity_details() -> EntityDetails {
+    let principal_id = ic_cdk::caller();
+
+    // Check if the principal ID is registered as a farmer
+    if let Some(farmer) = REGISTERED_FARMERS.with(|farmers| {
+        farmers
+            .borrow()
+            .values()
+            .find(|farmer| farmer.principal_id == principal_id)
+            .cloned()
+    }) {
+        return EntityDetails::Farmer(farmer);
+    }
+
+    // Check if the principal ID is registered as an investor
+    if let Some(investor) = REGISTERED_INVESTORS.with(|investors| {
+        investors
+            .borrow()
+            .values()
+            .find(|investor| investor.principal_id == principal_id)
+            .cloned()
+    }) {
+        return EntityDetails::Investor(investor);
+    }
+
+    // Check if the principal ID is registered as a supply agribusiness
+    if let Some(agribusiness) = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness
+            .borrow()
+            .values()
+            .find(|agribiz| agribiz.principal_id == principal_id)
+            .cloned()
+    }) {
+        return EntityDetails::SupplyAgriBusiness(agribusiness);
+    }
+
+    // Check if the principal ID is registered as a farms agribusiness
+    if let Some(agribusiness) = REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+        agribusiness
+            .borrow()
+            .values()
+            .find(|agribiz| agribiz.principal_id == principal_id)
+            .cloned()
+    }) {
+        return EntityDetails::FarmsAgriBusiness(agribusiness);
+    }
+
+    // If not registered in any category
+    EntityDetails::NotRegistered
+}
+
+/**
+* Function: display_specific_farm
+* Description: Retrieves the details of a specific farm by its ID.
+* @param farm_id: u64 - The ID of the farm to be retrieved
+* @return Result<Farmer, Error> - The Farmer instance if found, or an error message otherwise
+*/
+#[query]
+pub fn display_specific_farm(farm_id: u64) -> Result<Farmer, Error> {
+    FARMER_STORAGE.with(|farmer_storage| {
+        let farmers = farmer_storage.borrow();
+        if let Some(farmer) = farmers.get(&farm_id) {
+            Ok(farmer.clone())
+        } else {
+            Err(Error::MismatchId {
+                msg: format!("No farm found with ID: {}", farm_id),
+            })
+        }
+    })
+}
+
+/**
+* Function: display_specific_investor
+* Description: Retrieves the details of a specific investor by their principal ID.
+* @param principal_id: Principal - The principal ID of the investor to be retrieved
+* @return Result<Investor, Error> - The Investor instance if found, or an error message otherwise
+*/
+#[query]
+pub fn display_specific_investor(principal_id: Principal) -> Result<Investor, Error> {
+    REGISTERED_INVESTORS.with(|investors| {
+        let investors = investors.borrow();
+        for investor in investors.values() {
+            if investor.principal_id == principal_id {
+                return Ok(investor.clone());
+            }
+        }
+        Err(Error::YouAreNotRegistered {
+            msg: format!("No investor found with Principal ID: {}", principal_id),
+        })
+    })
+}
+
+/**
+* Function: display_specific_farm_agribusiness
+* Description: Retrieves the details of a specific farms agribusiness by its principal ID.
+* @param principal_id: Principal - The principal ID of the farms agribusiness to be retrieved
+* @return Result<FarmsAgriBusiness, Error> - The FarmsAgriBusiness instance if found, or an error message otherwise
+*/
+#[query]
+pub fn display_specific_farm_agribusiness(
+    principal_id: Principal,
+) -> Result<FarmsAgriBusiness, Error> {
+    REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness_storage| {
+        let agribusinesses = agribusiness_storage.borrow();
+        for agribusiness in agribusinesses.values() {
+            if agribusiness.principal_id == principal_id {
+                return Ok(agribusiness.clone());
+            }
+        }
+        Err(Error::MismatchId {
+            msg: format!(
+                "No farms agribusiness found with principal ID: {}",
+                principal_id
+            ),
+        })
+    })
+}
+
+#[update]
+fn upload_file(filename: String, file_data: Vec<u8>) -> Result<Success, Error> {
+    FILE_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        storage.insert(filename.clone(), file_data);
+        Ok(Success::ReportUploadedSuccesfully {
+            msg: format!("File {} uploaded successfully", filename),
+        })
+    })
+}
+
+#[query]
+
+fn get_file(filename: String) -> Result<Vec<u8>, Error> {
+    FILE_STORAGE.with(|storage| {
+        let storage = storage.borrow();
+        storage.get(&filename).cloned().ok_or(Error::FileNotFound {
+            msg: format!("File {} not found", filename),
+        })
+    })
+}
+
+#[query]
+
+fn get_all_files() -> Result<Vec<(String, Vec<u8>)>, Error> {
+    FILE_STORAGE.with(|storage| {
+        let storage = storage.borrow();
+        Ok(storage
+            .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect())
+    })
 }
