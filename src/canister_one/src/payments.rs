@@ -1,20 +1,40 @@
 use std::collections::HashMap;
 use std::cell::RefCell;
 
-use ic_cdk::{query, update}; 
+use candid::CandidType;
+use ic_cdk::{query, update};
+use serde::Deserialize;
 
 // Defining structs 
-struct InvestorInvestments {
-    investments: HashMap<u64, Vec<(u64, f64, String, String)>>, // investor_id => [(farm_id, amount), ...]
-} 
+#[derive(Clone, CandidType, Deserialize)]
+pub struct InvestorInvestments {
+    investments: HashMap<u64, Vec<(u64, f64, String, String)>>, // investor_id => [(farm_id, amount, transaction_hash, currency), ...]
+}
 
-struct FarmInvestments {
+#[derive(Clone, CandidType, Deserialize)]
+pub struct FarmInvestments {
     investments: HashMap<u64, Vec<(u64, f64, String, String)>>, // farm_id => [(investor_id, amount), ...]
 }
 
+impl InvestorInvestments {
+    pub fn clone_investments(&self) -> Self {
+        InvestorInvestments {
+            investments: self.investments.clone(),
+        }
+    }
+}
+
+impl FarmInvestments {
+    pub fn clone_investments(&self) -> Self {
+        FarmInvestments {
+            investments: self.investments.clone(),
+        }
+    }
+}
+
 thread_local! {
-    static INVESTOR_INVESTMENTS: RefCell<InvestorInvestments> = RefCell::new(InvestorInvestments { investments: HashMap::new() });
-    static FARM_INVESTMENTS: RefCell<FarmInvestments> = RefCell::new(FarmInvestments { investments: HashMap::new() });
+    pub static INVESTOR_INVESTMENTS: RefCell<InvestorInvestments> = RefCell::new(InvestorInvestments { investments: HashMap::new() });
+    pub static FARM_INVESTMENTS: RefCell<FarmInvestments> = RefCell::new(FarmInvestments { investments: HashMap::new() });
 }
 
 #[update] 
