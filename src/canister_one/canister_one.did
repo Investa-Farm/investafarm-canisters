@@ -206,6 +206,11 @@ service : {
   add_financial_reports : (nat64, opt vec FinancialReport) -> (Result);
   add_tag : (nat64, text) -> (Result_1);
   ask_for_loan : (nat64, nat64, TokenCollateral) -> (Result);
+  calculate_total_investments_by_investor : (nat64) -> (float64) query;
+  calculate_total_investments_by_investor_on_farm : (nat64, nat64) -> (
+      float64,
+    ) query;
+  calculate_total_investments_received_by_farm : (nat64) -> (float64) query;
   canister_deposit_principal : () -> (text) query;
   check_entity_type : () -> (EntityType) query;
   check_funding_round_expiry : (nat64) -> (Result_2);
@@ -252,7 +257,6 @@ service : {
   register_your_farm : (NewFarmer) -> (Result);
   store_investments : (nat64, float64, nat64, text, text) -> (Result_1);
   store_transaction_fee : (text, float64) -> (Result_1);
-  test_frontend : () -> (text) query;
   update_farmer_farm_details : (nat64, text, text) -> (Result_1);
   update_farms_agribusiness_name : (nat64, text) -> (Result_1);
   update_investor_name : (nat64, text) -> (Result_1);

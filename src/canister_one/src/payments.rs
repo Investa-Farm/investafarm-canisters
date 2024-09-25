@@ -16,22 +16,6 @@ pub struct FarmInvestments {
     investments: HashMap<u64, Vec<(u64, f64, String, String)>>, // farm_id => [(investor_id, amount), ...]
 }
 
-impl InvestorInvestments {
-    pub fn clone_investments(&self) -> Self {
-        InvestorInvestments {
-            investments: self.investments.clone(),
-        }
-    }
-}
-
-impl FarmInvestments {
-    pub fn clone_investments(&self) -> Self {
-        FarmInvestments {
-            investments: self.investments.clone(),
-        }
-    }
-}
-
 thread_local! {
     pub static INVESTOR_INVESTMENTS: RefCell<InvestorInvestments> = RefCell::new(InvestorInvestments { investments: HashMap::new() });
     pub static FARM_INVESTMENTS: RefCell<FarmInvestments> = RefCell::new(FarmInvestments { investments: HashMap::new() });
