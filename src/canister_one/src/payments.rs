@@ -53,3 +53,41 @@ fn get_investments_by_farm(farm_id: u64) -> Option<Vec<(u64, f64, String, String
         farm_investments.investments.get(&farm_id).cloned()
     })
 }
+
+// Calculating total investments recieved by a farm
+#[query]
+fn calculate_total_investments_received_by_farm(farm_id: u64) -> f64 {
+    FARM_INVESTMENTS.with(|farm_investments| {
+        let farm_investments = farm_investments.borrow();
+        farm_investments.investments.get(&farm_id)
+            .map(|investments| investments.iter().map(|(_, amount, _, _)| amount).sum())
+            .unwrap_or(0.0)
+    })
+}
+
+// Calculating total investments made by an investor on a specific farm 
+#[query]    
+fn calculate_total_investments_by_investor_on_farm(investor_id: u64, farm_id: u64) -> f64 {
+    INVESTOR_INVESTMENTS.with(|investor_investments| {
+        let investor_investments = investor_investments.borrow();
+        investor_investments.investments.get(&investor_id)
+            .map(|investments| {
+                investments.iter()
+                    .filter(|(f_id, _, _, _)| *f_id == farm_id)
+                    .map(|(_, amount, _, _)| amount)
+                    .sum()
+            })
+            .unwrap_or(0.0)
+    })
+}
+
+// Calculating total investments made by an investor across all farms
+#[query]
+fn calculate_total_investments_by_investor(investor_id: u64) -> f64 {
+    INVESTOR_INVESTMENTS.with(|investor_investments| {
+        let investor_investments = investor_investments.borrow();
+        investor_investments.investments.get(&investor_id)
+            .map(|investments| investments.iter().map(|(_, amount, _, _)| amount).sum())
+            .unwrap_or(0.0)
+    })
+}
