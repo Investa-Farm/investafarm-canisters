@@ -45,8 +45,8 @@ pub fn ask_for_loan(
         // Set the funding_round_start_time field to the current time
         farm.funding_round_start_time = Some(ic_cdk::api::time());
         // Set the time_for_funding_round_to_expire field to a duration of 1 month
-        // farm.time_for_funding_round_to_expire = Some(Duration::from_secs(30 * 24 * 60 * 60));
-        farm.time_for_funding_round_to_expire = Some(Duration::from_secs(3 * 60)); //(use this to test)
+        farm.time_for_funding_round_to_expire = Some(Duration::from_secs(30 * 24 * 60 * 60)); // For Production
+        // farm.time_for_funding_round_to_expire = Some(Duration::from_secs(3 * 60)); //(use this to test)
 
         // Set the token collateral
         farm.token_collateral = Some(token_collateral);
