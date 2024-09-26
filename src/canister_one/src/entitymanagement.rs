@@ -9,6 +9,7 @@ use std::collections::HashMap;
 use std::{borrow::Cow, cell::RefCell}; //interior mutability with runtime borrow checking
                                        // use std::collections::BTreeMap;
 use std::time::Duration;
+use std::sync::atomic::{AtomicU64, Ordering};
 
 /**
 * Memory Type Alias
@@ -20,6 +21,9 @@ use std::time::Duration;
 */
 pub type Memory = VirtualMemory<DefaultMemoryImpl>;
 // type IdCell = Cell<u64, Memory>;
+
+// A global atomic counter to ensure uniqueness
+static COUNTER: AtomicU64 = AtomicU64::new(0);
 
 /**
 * Farmer Struct
@@ -729,45 +733,31 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         || new_farmer.farm_description.is_empty()
     {
         return Err(Error::FieldEmpty {
-            msg: format!("Kindly ensure all required fieilds are filled!"),
+            msg: format!("Kindly ensure all required fields are filled!"),
         });
     }
 
-    /* Checking whether the farm name is taken (This code doesn't work)
-     *let mut is_farm_name_taken = false;
-     *
-     *REGISTERED_FARMERS.with(|farmers| {
-     *     if farmers.borrow().contains_key(&new_farmer.farm_name) {
-     *         is_farm_name_taken = true;
-     *     }
-     *});
-     *
-     *if is_farm_name_taken {
-     *   return Err(Error::FarmNameTaken { msg: format!("The farm name '{}' is already taken!", new_farmer.farm_name) });
-     *}
-     */
-
     // Checking whether the farm name is taken
-    let farm_name = &new_farmer.farm_name;
-    let _ = REGISTERED_FARMERS.with(|farmers| {
-        if farmers.borrow().contains_key(farm_name) {
-            return Err(Error::FarmNameTaken {
-                msg: format!("The farm name '{}' is already taken!", farm_name),
-            });
-        }
-        Ok(())
-    });
+    // let farm_name = &new_farmer.farm_name;
+    // let _ = REGISTERED_FARMERS.with(|farmers| {
+    //     if farmers.borrow().contains_key(farm_name) {
+    //         return Err(Error::FarmNameTaken {
+    //             msg: format!("The farm name '{}' is already taken!", farm_name),
+    //         });
+    //     }
+    //     Ok(())
+    // });
 
     // Check if principal ID is already registered
     let new_farmer_principal_id = ic_cdk::caller();
     _is_principal_id_registered(new_farmer_principal_id)?;
 
-    //Increment the farmer ID
-    let id = FARMER_ID.with(|id| _increament_id(id));
+    // Generate a unique farmer ID
+    let id = _generate_unique_id();
 
     // Create a new farmer instance
     let farmer = Farmer {
-        id,
+        id, 
         principal_id: new_farmer_principal_id,
         farm_name: new_farmer.farmer_name.clone(),
         farmer_name: new_farmer.farm_name.clone(),
@@ -790,26 +780,21 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         funding_round_start_time: None,
         loan_start_time: None,
         images: None,
-        // reports: None
         farm_reports: None,
         financial_reports: None,
     };
-
-    //Is this cloning necessary. Seems expensive.
-    let farmer_clone1 = farmer.clone();
-    let farmer_clone2 = farmer.clone();
 
     // Mapping farmer name
     REGISTERED_FARMERS.with(|farmers| {
         farmers
             .borrow_mut()
-            .insert(farmer.farm_name.clone(), farmer_clone1)
+            .insert(farmer.farm_name.clone(), farmer.clone())
     });
 
-    FARMER_STORAGE.with(|farmers| farmers.borrow_mut().insert(id, farmer_clone2));
+    FARMER_STORAGE.with(|farmers| farmers.borrow_mut().insert(id, farmer));
 
     Ok(Success::FarmCreatedSuccesfully {
-        msg: format!("Farm has been created succesfully"),
+        msg: format!("Farm has been created successfully"),
     })
 }
 
@@ -892,6 +877,14 @@ pub fn _increament_id(id: &RefCell<u64>) -> u64 {
     let new_id = *id_borrowed + 1;
     *id_borrowed = new_id;
     new_id
+}
+
+// Function: _generate_unique_id
+// Description: Generates a new unique ID using a counter.
+// @return u64 - New unique ID value
+pub fn _generate_unique_id() -> u64 {
+    // Increment the counter atomically
+    COUNTER.fetch_add(1, Ordering::SeqCst)
 }
 
 /**
