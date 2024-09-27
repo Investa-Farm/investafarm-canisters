@@ -247,6 +247,7 @@ service : {
   get_remaining_funding_time : (nat64) -> (Result_10) query;
   get_remaining_loan_maturity_time : (nat64) -> (Result_10) query;
   get_usdc_receipt : (text) -> (text);
+  ifarm_balance : (principal) -> (nat);
   initiate_loan : (nat64) -> (Result_11);
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
