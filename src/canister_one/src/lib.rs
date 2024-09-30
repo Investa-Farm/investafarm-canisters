@@ -17,7 +17,7 @@ use ic_cdk::{query, update};
 use candid::Principal;
 use candid::Nat;
 
-use b3_utils::ledger::ICRC1TransferResult;
+use b3_utils::ledger::{ ICRC1TransferResult, ICRC2ApproveResult, ICRC2TransferFromResult};
 
 mod adminapproval;
 mod askforloan;

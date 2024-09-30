@@ -99,6 +99,28 @@ type ICRC1TransferError = variant {
   TooOld;
   InsufficientFunds : record { balance : nat };
 };
+type ICRC2ApproveError = variant {
+  GenericError : record { message : text; error_code : nat };
+  TemporarilyUnavailable;
+  Duplicate : record { duplicate_of : nat };
+  BadFee : record { expected_fee : nat };
+  AllowanceChanged : record { current_allowance : nat };
+  CreatedInFuture : record { ledger_time : nat64 };
+  TooOld;
+  Expired : record { ledger_time : nat64 };
+  InsufficientFunds : record { balance : nat };
+};
+type ICRC2TransferFromError = variant {
+  GenericError : record { message : text; error_code : nat };
+  TemporarilyUnavailable;
+  InsufficientAllowance : record { allowance : nat };
+  BadBurn : record { min_burn_amount : nat };
+  Duplicate : record { duplicate_of : nat };
+  BadFee : record { expected_fee : nat };
+  CreatedInFuture : record { ledger_time : nat64 };
+  TooOld;
+  InsufficientFunds : record { balance : nat };
+};
 type Investor = record {
   id : nat64;
   verified : bool;
@@ -142,8 +164,10 @@ type RegisterFarm = record {
 type Result = variant { Ok : Success; Err : Error };
 type Result_1 = variant { Ok; Err : text };
 type Result_10 = variant { Ok : nat64; Err : Error };
-type Result_11 = variant { Ok; Err : Error };
-type Result_12 = variant { Ok : VerifiedTransactionDetails; Err : text };
+type Result_11 = variant { Ok : nat; Err : ICRC2ApproveError };
+type Result_12 = variant { Ok : nat; Err : ICRC2TransferFromError };
+type Result_13 = variant { Ok; Err : Error };
+type Result_14 = variant { Ok : VerifiedTransactionDetails; Err : text };
 type Result_2 = variant { Ok : text; Err : Error };
 type Result_3 = variant { Ok : nat; Err : ICRC1TransferError };
 type Result_4 = variant { Ok : RetrieveEthRequest; Err : WithdrawalError };
@@ -247,8 +271,11 @@ service : {
   get_remaining_funding_time : (nat64) -> (Result_10) query;
   get_remaining_loan_maturity_time : (nat64) -> (Result_10) query;
   get_usdc_receipt : (text) -> (text);
+  ifarm_approve : (principal, nat) -> (Result_11);
   ifarm_balance : (principal) -> (nat);
-  initiate_loan : (nat64) -> (Result_11);
+  ifarm_transfer : (principal, nat) -> (Result_3);
+  ifarm_transfer_from : (principal, principal, nat) -> (Result_12);
+  initiate_loan : (nat64) -> (Result_13);
   log_in : () -> (Result) query;
   publish_unpublish : (nat64, bool) -> (Result);
   register_farm_details : (nat64, RegisterFarm, text) -> (Result);
@@ -265,11 +292,11 @@ service : {
   upload_farm_report : (nat64, vec FarmReport_1) -> (Result);
   upload_file : (text, blob) -> (Result);
   upload_financial_report : (nat64, vec FinancialReport_1) -> (Result);
-  verify_cketh_transaction : (text, nat64, nat64) -> (Result_12);
-  verify_farmer : (nat64, bool) -> (Result_11);
-  verify_farms_agribusiness : (nat64, bool) -> (Result_11);
-  verify_investor : (nat64, bool) -> (Result_11);
-  verify_supply_agribusiness : (nat64, bool) -> (Result_11);
-  verify_usdc_transaction : (text, nat64, nat64) -> (Result_12);
+  verify_cketh_transaction : (text, nat64, nat64) -> (Result_14);
+  verify_farmer : (nat64, bool) -> (Result_13);
+  verify_farms_agribusiness : (nat64, bool) -> (Result_13);
+  verify_investor : (nat64, bool) -> (Result_13);
+  verify_supply_agribusiness : (nat64, bool) -> (Result_13);
+  verify_usdc_transaction : (text, nat64, nat64) -> (Result_14);
   who_am_i : () -> (principal);
 }
