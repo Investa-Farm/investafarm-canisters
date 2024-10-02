@@ -31,7 +31,7 @@ pub async fn ifarm_transfer(to: Principal, amount: Nat) -> ICRC1TransferResult {
         to,
         amount,
         from_subaccount: None,
-        fee: None,
+        fee: Some(Nat::from(10000u64)),
         memo: None,
         created_at_time: None,
     };
@@ -41,6 +41,7 @@ pub async fn ifarm_transfer(to: Principal, amount: Nat) -> ICRC1TransferResult {
 // Approve ifarm token
 #[ic_cdk::update]
 async fn ifarm_approve(spender: Principal, amount: Nat) -> ICRC2ApproveResult {
+    // let subaccount = ICRCAccount::new(subaccount, None);
     let spender = ICRCAccount::new(spender, None);
     let approve_args = ICRC2ApproveArgs {
         spender,
@@ -48,7 +49,7 @@ async fn ifarm_approve(spender: Principal, amount: Nat) -> ICRC2ApproveResult {
         from_subaccount: None,
         expected_allowance: None,
         expires_at: None,
-        fee: None,
+        fee: Some(Nat::from(10000u64)),
         memo: None,
         created_at_time: None,
     };
@@ -65,7 +66,7 @@ async fn ifarm_transfer_from(from: Principal, to: Principal, amount: Nat) -> ICR
         to,
         amount,
         spender_subaccount: None,
-        fee: None,
+        fee: Some(Nat::from(10000u64)),
         memo: None,
         created_at_time: None,
     };
