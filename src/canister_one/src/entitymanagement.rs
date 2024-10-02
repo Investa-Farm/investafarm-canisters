@@ -8,8 +8,8 @@ use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap}; 
 use std::collections::HashMap;
 use std::{borrow::Cow, cell::RefCell}; //interior mutability with runtime borrow checking
                                        // use std::collections::BTreeMap;
-use std::time::Duration;
 use std::sync::atomic::{AtomicU64, Ordering};
+use std::time::Duration;
 
 /**
 * Memory Type Alias
@@ -685,7 +685,7 @@ pub enum Success {
     AppliedForLoanSuccesfully { msg: String },
     ItemsAdded { msg: String },
     PartialDataStored { msg: String },
-    ReportDeletedSuccessfully { msg: String }
+    ReportDeletedSuccessfully { msg: String },
 }
 
 // Error Messages
@@ -757,7 +757,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
 
     // Create a new farmer instance
     let farmer = Farmer {
-        id, 
+        id,
         principal_id: new_farmer_principal_id,
         farm_name: new_farmer.farmer_name.clone(),
         farmer_name: new_farmer.farm_name.clone(),
@@ -1558,6 +1558,18 @@ fn get_all_files() -> Result<Vec<(String, Vec<u8>)>, Error> {
         let storage = storage.borrow();
         Ok(storage
             .iter()
+            .map(|(k, v)| (k.clone(), v.clone()))
+            .collect())
+    })
+}
+
+#[query]
+fn get_files_by_type(farmer_id: u64, report_type: String) -> Result<Vec<(String, Vec<u8>)>, Error> {
+    FILE_STORAGE.with(|storage| {
+        let storage = storage.borrow();
+        Ok(storage
+            .iter()
+            .filter(|(k, _)| k.starts_with(&format!("{}_{}", report_type, farmer_id)))
             .map(|(k, v)| (k.clone(), v.clone()))
             .collect())
     })

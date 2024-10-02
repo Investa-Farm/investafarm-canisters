@@ -156,7 +156,6 @@ fn add_farm_tags(
         })
     }
 }
-
 #[update]
 fn add_farm_images(
     farm_id: u64,
@@ -164,36 +163,41 @@ fn add_farm_images(
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
     let caller = ic_cdk::caller();
 
-    let mut farms_for_agribusiness = get_farms_for_agribusiness();
-
-    if let Some(farm) = farms_for_agribusiness
-        .iter_mut()
-        .find(|f| f.id == farm_id && f.principal_id == caller)
-    {
-        FARM_IMAGES.with(|images_storage| {
-            let mut images_storage = images_storage.borrow_mut();
-            images_storage.entry(farm_id).or_default().extend(images);
+    // Check both storages for the farm
+    let farm = entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+        .with(|storage| storage.borrow().get(&farm_id).clone())
+        .or_else(|| {
+            entitymanagement::FARMER_STORAGE.with(|storage| storage.borrow().get(&farm_id).clone())
         });
 
-        let farm_clone_1 = farm.clone();
-        let farm_clone_2 = farm.clone();
+    if let Some(farm) = farm {
+        if farm.principal_id == caller {
+            FARM_IMAGES.with(|images_storage| {
+                let mut images_storage = images_storage.borrow_mut();
+                images_storage.entry(farm_id).or_default().extend(images);
+            });
 
-        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
-            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_1));
+            // Update both storages
+            entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+                .with(|service| service.borrow_mut().insert(farm_id, farm.clone()));
 
-        entitymanagement::FARMER_STORAGE
-            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_2));
+            entitymanagement::FARMER_STORAGE
+                .with(|service| service.borrow_mut().insert(farm_id, farm));
 
-        Ok(entitymanagement::Success::PartialDataStored {
-            msg: "Images added successfully.".to_string(),
-        })
+            Ok(entitymanagement::Success::PartialDataStored {
+                msg: "Images added successfully.".to_string(),
+            })
+        } else {
+            Err(entitymanagement::Error::NotAuthorized {
+                msg: "You are not authorized to modify this farm.".to_string(),
+            })
+        }
     } else {
         Err(entitymanagement::Error::NotAuthorized {
-            msg: format!("Farm not found!"),
+            msg: format!("Farm with ID {} not found in either storage!", farm_id),
         })
     }
 }
-
 #[update]
 fn add_financial_reports(
     farm_id: u64,
