@@ -156,7 +156,6 @@ fn add_farm_tags(
         })
     }
 }
-
 #[update]
 fn add_farm_images(
     farm_id: u64,
@@ -164,36 +163,48 @@ fn add_farm_images(
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
     let caller = ic_cdk::caller();
 
-    let mut farms_for_agribusiness = get_farms_for_agribusiness();
+    // Check both storages for the farm
+    let mut farm = entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+        .with(|storage| storage.borrow().get(&farm_id).clone())
+        .or_else(|| {
+            entitymanagement::FARMER_STORAGE.with(|storage| storage.borrow().get(&farm_id).clone())
+        })
+        .ok_or_else(|| entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm with ID {} not found in either storage!", farm_id),
+        })?;
 
-    if let Some(farm) = farms_for_agribusiness
-        .iter_mut()
-        .find(|f| f.id == farm_id && f.principal_id == caller)
-    {
+    if farm.principal_id == caller {
+        // Generate image references (you might want to use a more sophisticated method)
+        let image_refs: Vec<String> = images
+            .iter()
+            .enumerate()
+            .map(|(index, _)| format!("image_{}", index))
+            .collect();
+
+        // Store the actual images
         FARM_IMAGES.with(|images_storage| {
             let mut images_storage = images_storage.borrow_mut();
-            images_storage.entry(farm_id).or_default().extend(images);
+            images_storage.insert(farm_id, images);
         });
 
-        let farm_clone_1 = farm.clone();
-        let farm_clone_2 = farm.clone();
+        // Update the farm's image references
+        farm.images = Some(image_refs);
 
+        // Update both storages
         entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
-            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_1));
+            .with(|service| service.borrow_mut().insert(farm_id, farm.clone()));
 
-        entitymanagement::FARMER_STORAGE
-            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_2));
+        entitymanagement::FARMER_STORAGE.with(|service| service.borrow_mut().insert(farm_id, farm));
 
         Ok(entitymanagement::Success::PartialDataStored {
-            msg: "Images added successfully.".to_string(),
+            msg: "Images added successfully and linked to the farm.".to_string(),
         })
     } else {
         Err(entitymanagement::Error::NotAuthorized {
-            msg: format!("Farm not found!"),
+            msg: "You are not authorized to modify this farm.".to_string(),
         })
     }
 }
-
 #[update]
 fn add_financial_reports(
     farm_id: u64,
