@@ -23,4 +23,6 @@ dist/
 
 # environment variables
 .env
+
 Cargo.lock
+src/canister_one/canister_one.did
