@@ -321,8 +321,10 @@ pub struct SuppliedItems {
 pub enum OrderStatus {
     #[default]
     Pending,
+    Packed,
+    Sorted,
     Complete,
-    Cancelled,
+    Cancelled
 }
 
 /**

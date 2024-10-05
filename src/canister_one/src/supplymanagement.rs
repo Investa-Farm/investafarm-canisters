@@ -164,6 +164,54 @@ pub fn list_orders_by_agribusiness(supply_agribusiness_id: u64) -> Vec<Order> {
     Vec::new()
 }
 
+/// Function to list pending orders by a supply agribusiness
+#[query]
+pub fn list_pending_orders_by_agribusiness(supply_agribusiness_id: u64) -> Vec<Order> {
+    list_orders_by_status_agribusiness(supply_agribusiness_id, OrderStatus::Pending)
+}
+
+/// Function to list packed orders by a supply agribusiness
+#[query]
+pub fn list_packed_orders_by_agribusiness(supply_agribusiness_id: u64) -> Vec<Order> {
+    list_orders_by_status_agribusiness(supply_agribusiness_id, OrderStatus::Packed)
+}
+
+/// Function to list sorted orders by a supply agribusiness
+#[query]
+pub fn list_sorted_orders_by_agribusiness(supply_agribusiness_id: u64) -> Vec<Order> {
+    list_orders_by_status_agribusiness(supply_agribusiness_id, OrderStatus::Sorted)
+}
+
+/// Function to list completed orders by a supply agribusiness
+#[query]
+pub fn list_completed_orders_by_agribusiness(supply_agribusiness_id: u64) -> Vec<Order> {
+    list_orders_by_status_agribusiness(supply_agribusiness_id, OrderStatus::Completed)
+}
+
+/// Function to list cancelled orders by a supply agribusiness
+#[query]
+pub fn list_cancelled_orders_by_agribusiness(supply_agribusiness_id: u64) -> Vec<Order> {
+    list_orders_by_status_agribusiness(supply_agribusiness_id, OrderStatus::Cancelled)
+}
+
+/// Helper function to list orders by status for a supply agribusiness
+fn list_orders_by_status_agribusiness(supply_agribusiness_id: u64, status: OrderStatus) -> Vec<Order> {
+    unsafe {
+        if let Some(supply_agribusinesses) = addr_of!(SUPPLY_AGRIBUSINESSES).as_ref().unwrap() {
+            if let Some(supply_agribusiness) = supply_agribusinesses.get(&supply_agribusiness_id) {
+                return supply_agribusiness
+                    .orders
+                    .iter()
+                    .filter(|order| order.status == status)
+                    .cloned()
+                    .collect();
+            }
+        }
+    }
+    Vec::new()
+}
+
+
 /**
  * Function to list orders sent by a farmer to supply agribusinesses
  * Retrieves a list of orders sent by a specific farmer to multiple supply agribusinesses.
@@ -180,6 +228,55 @@ pub fn list_farmer_sent_orders(farmer_id: u64, supply_agribusiness_ids: Vec<u64>
                 if let Some(supply_agribusiness) = supply_agribusinesses.get(&id) {
                     for order in &supply_agribusiness.orders {
                         if order.farmer_id == farmer_id {
+                            farmer_orders.push(order.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+    farmer_orders
+}
+
+/// Function to list pending orders sent by a farmer to supply agribusinesses
+#[query]
+pub fn list_pending_farmer_orders(farmer_id: u64, supply_agribusiness_ids: Vec<u64>) -> Vec<Order> {
+    list_farmer_orders_by_status(farmer_id, supply_agribusiness_ids, OrderStatus::Pending)
+}
+
+/// Function to list packed orders sent by a farmer to supply agribusinesses
+#[query]
+pub fn list_packed_farmer_orders(farmer_id: u64, supply_agribusiness_ids: Vec<u64>) -> Vec<Order> {
+    list_farmer_orders_by_status(farmer_id, supply_agribusiness_ids, OrderStatus::Packed)
+}
+
+/// Function to list sorted orders sent by a farmer to supply agribusinesses
+#[query]
+pub fn list_sorted_farmer_orders(farmer_id: u64, supply_agribusiness_ids: Vec<u64>) -> Vec<Order> {
+    list_farmer_orders_by_status(farmer_id, supply_agribusiness_ids, OrderStatus::Sorted)
+}
+
+/// Function to list completed orders sent by a farmer to supply agribusinesses
+#[query]
+pub fn list_completed_farmer_orders(farmer_id: u64, supply_agribusiness_ids: Vec<u64>) -> Vec<Order> {
+    list_farmer_orders_by_status(farmer_id, supply_agribusiness_ids, OrderStatus::Completed)
+}
+
+/// Function to list cancelled orders sent by a farmer to supply agribusinesses
+#[query]
+pub fn list_cancelled_farmer_orders(farmer_id: u64, supply_agribusiness_ids: Vec<u64>) -> Vec<Order> {
+    list_farmer_orders_by_status(farmer_id, supply_agribusiness_ids, OrderStatus::Cancelled)
+}
+
+/// Helper function to list farmer orders by status
+fn list_farmer_orders_by_status(farmer_id: u64, supply_agribusiness_ids: Vec<u64>, status: OrderStatus) -> Vec<Order> {
+    let mut farmer_orders: Vec<Order> = Vec::new();
+    unsafe {
+        if let Some(supply_agribusinesses) = addr_of!(SUPPLY_AGRIBUSINESSES).as_ref().unwrap() {
+            for &id in &supply_agribusiness_ids {
+                if let Some(supply_agribusiness) = supply_agribusinesses.get(&id) {
+                    for order in &supply_agribusiness.orders {
+                        if order.farmer_id == farmer_id && order.status == status {
                             farmer_orders.push(order.clone());
                         }
                     }

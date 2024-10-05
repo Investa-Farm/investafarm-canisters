@@ -124,12 +124,13 @@ type Order = record {
   status : OrderStatus;
   farmer_id : nat64;
   total_price : nat64;
+  shipping : Shipping;
   principal_id : principal;
   order_id : nat64;
   items : vec record { text; record { nat64; nat64 } };
   supply_agribusiness_id : nat64;
 };
-type OrderStatus = variant { Complete; Cancelled; Pending };
+type OrderStatus = variant { Packed; Complete; Sorted; Cancelled; Pending };
 type RegisterFarm = record {
   tags : opt vec text;
   farm_reports : opt vec FarmReport_1;
@@ -158,6 +159,7 @@ type Section = record {
   content : opt text;
   items : opt vec text;
 };
+type Shipping = variant { Express };
 type Success = variant {
   FarmerUpdateSuccesfull : record { msg : text };
   InvestorUpdateSuccesfull : record { msg : text };
