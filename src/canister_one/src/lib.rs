@@ -33,6 +33,7 @@ mod transaction_fees;
 // mod supplymanagement;
 mod ckusdc_payments;
 mod ifarm_tokens;
+// mod exchange_rate;
 
 use ic_cdk::storage;
 
