@@ -34,6 +34,7 @@ mod transaction_fees;
 mod ckusdc_payments;
 mod ifarm_tokens;
 // mod exchange_rate;
+mod investor_saved_farms;
 
 use ic_cdk::storage;
 
