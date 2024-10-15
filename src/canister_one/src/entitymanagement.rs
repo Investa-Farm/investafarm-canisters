@@ -124,7 +124,7 @@ pub struct TokenCollateral {
  * Default Implementation for Entity Type [Constructor]
  * Provides a default implementation for the EntityType struct.
 **/
-#[derive(CandidType, Deserialize, Serialize)]
+#[derive(CandidType, Deserialize, Serialize, PartialEq)]
 pub enum EntityType {
     Farmer,
     Investor,
@@ -211,7 +211,7 @@ pub struct Investor {
     pub id: u64,                       //Unique identifier for the investor.
     name: String,                      //Name of the investor.
     pub verified: bool,                //Indicates if the investor is verified.
-    principal_id: Principal,           //Investor's principal ID.
+    pub principal_id: Principal,           //Investor's principal ID.
     pub saved_farms: Option<Vec<u64>>, // List of saved farm IDs.
 }
 
@@ -699,7 +699,8 @@ pub enum Success {
     AppliedForLoanSuccesfully { msg: String },
     ItemsAdded { msg: String },
     PartialDataStored { msg: String },
-    ReportDeletedSuccessfully { msg: String }
+    ReportDeletedSuccessfully { msg: String }, 
+    InvestorUpdatedSuccessfully { msg: String }
 }
 
 // Error Messages
@@ -720,6 +721,8 @@ pub enum Error {
     ErrorOccured { msg: String },
     Error { msg: String },
     FileNotFound { msg: String },
+    NotFound { msg: String }, 
+    Unauthorized { msg: String }
 }
 
 /** Login function
