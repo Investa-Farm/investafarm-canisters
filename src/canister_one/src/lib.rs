@@ -7,7 +7,7 @@ use crate::entitymanagement::EntityDetails;
 use crate::entitymanagement::Farmer;  
 use crate::entitymanagement::Investor;  
 use crate::entitymanagement::FarmsAgriBusiness; 
-use crate::farmsagribizmanagement::RegisterFarm; 
+use crate::farmsagribizmanagement::FileInfo; 
 use crate::ck_eth::receipt; 
 use crate::ck_eth::minter; 
 use crate::entitymanagement::FinancialReport;
