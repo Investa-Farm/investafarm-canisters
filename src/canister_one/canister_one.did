@@ -27,6 +27,7 @@ type Error = variant {
   FileNotFound : record { msg : text };
   TagAlreadyExists : record { msg : text };
   InvestorNotFound : record { msg : text };
+  UploadFailed : record { msg : text };
   FarmNameTaken : record { msg : text };
   AgribusinessNotFound : record { msg : text };
 };
@@ -191,6 +192,7 @@ type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
   SupplyAgriBusinessLogInSuccesfull : record { msg : text };
+  FarmCreatedSuccessfully : record { msg : text };
   ItemsAdded : record { msg : text };
   FarmsAgriBizRegisteredSuccesfully : record { msg : text };
   SupplyAgriBizRegisteredSuccesfully : record { msg : text };
@@ -201,6 +203,7 @@ type Success = variant {
   FarmCreatedSuccesfully : record { msg : text };
   FarmAddedSuccesfully : record { msg : text };
   TagDeletedSuccesfully : record { msg : text };
+  FileUploaded : record { msg : text };
   PartialDataStored : record { msg : text };
   FarmDeletedSuccesfully : record { msg : text };
   FarmsAgriBusinessUpdateSuccesfull : record { msg : text };
@@ -279,6 +282,7 @@ service : {
   log_in : () -> (Result) query;
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
+  register_single_farm : (NewFarmer) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
   store_investment : (nat64, float64, nat64, text) -> (Result_1);
