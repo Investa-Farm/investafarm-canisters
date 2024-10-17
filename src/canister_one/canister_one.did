@@ -83,7 +83,9 @@ type FarmsAgriBusiness = record {
 type FileInfo = record {
   agribusiness_name : text;
   filename : text;
+  farms_uploaded : bool;
   principal_id : principal;
+  file_id : nat64;
 };
 type FinancialReport = record {
   title : text;
@@ -280,9 +282,10 @@ service : {
   initiate_loan : (nat64) -> (Result_15);
   is_allowed_principal : () -> (bool) query;
   log_in : () -> (Result) query;
+  mark_file_complete : (nat64) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
-  register_single_farm : (NewFarmer) -> (Result);
+  register_single_farm : (NewFarmer, nat64) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
   store_investment : (nat64, float64, nat64, text) -> (Result_1);
