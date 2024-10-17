@@ -101,16 +101,40 @@ fn upload_agribusiness_spreadsheet(filename: String, file_data: Vec<u8>, agribus
 #[update]
 fn get_uploaded_files() -> Result<(Vec<FileInfo>, HashMap<String, Vec<u8>>), Error> {
     let entity_type = check_entity_type();
+    let caller = ic_cdk::caller();
 
     match entity_type {
         EntityType::FarmsAgriBusiness => {
-            let file_info = FILE_INFO_STORAGE.with(|info_storage| {
-                info_storage.borrow().clone()
+            // Filter FileInfo by caller
+            let filtered_file_info = FILE_INFO_STORAGE.with(|info_storage| {
+                info_storage.borrow()
+                    .iter()
+                    .filter(|file_info| file_info.principal_id == caller)
+                    .cloned()
+                    .collect::<Vec<FileInfo>>()
             });
-            let agribiz_file_info = AGRIBIZ_FILE_STORAGE.with(|agribiz_storage| {
-                agribiz_storage.borrow().clone()
+
+            // Get only the filenames that belong to the caller
+            let caller_filenames: Vec<String> = filtered_file_info
+                .iter()
+                .map(|info| info.filename.clone())
+                .collect();
+
+            // Filter the file contents to only include caller's files
+            let filtered_agribiz_files = AGRIBIZ_FILE_STORAGE.with(|agribiz_storage| {
+                let storage = agribiz_storage.borrow();
+                storage
+                    .iter()
+                    .filter(|(filename, _)| caller_filenames.contains(filename))
+                    .map(|(k, v)| (k.clone(), v.clone()))
+                    .collect::<HashMap<String, Vec<u8>>>()
             });
-            Ok((file_info, agribiz_file_info))
+
+            if filtered_file_info.is_empty() {
+                Ok((Vec::new(), HashMap::new()))
+            } else {
+                Ok((filtered_file_info, filtered_agribiz_files))
+            }
         },
         _ => Err(Error::NotAuthorized {
             msg: "Only registered agribusinesses can view uploaded files".to_string(),
