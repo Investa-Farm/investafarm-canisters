@@ -18,6 +18,8 @@ pub struct FileInfo {
 pub enum Success {
     FileUploaded { msg: String },
     FarmCreatedSuccessfully { msg: String },
+    FarmDeletedSuccessfully { msg: String }, 
+    FarmVerificationStatusChanged { msg: String }
 }
 
 #[derive(CandidType, Serialize, Deserialize)]
@@ -25,7 +27,8 @@ pub enum Error {
     UploadFailed { msg: String },
     NotAuthorized { msg: String }, 
     FieldEmpty { msg: String },
-    FarmNameTaken { msg: String }
+    FarmNameTaken { msg: String }, 
+    FarmNotFound { msg: String }
 }
 
 
@@ -239,7 +242,7 @@ pub fn register_single_farm(new_farmer: NewFarmer, file_id: u64) -> Result<Succe
                         tags: Some(Vec::new()),
                         amount_invested: None,
                         investors_ids: Principal::anonymous(),
-                        verified: false,
+                        verified: true,
                         agri_business: ic_cdk::caller().to_string(), 
                         insured: None,
                         publish: true,
@@ -277,4 +280,100 @@ pub fn register_single_farm(new_farmer: NewFarmer, file_id: u64) -> Result<Succe
         Err(e) => return Err(e), // Propagate any errors from check_file_status
     }
 
+}
+
+#[update]
+pub fn delete_single_farm(farm_id: u64) -> Result<Success, Error> {
+    // Check if the caller is allowed to delete farms
+    // if !is_allowed_principal() {
+    //     return Err(Error::PermissionDenied {
+    //         msg: "You are not an admin!".to_string(),
+    //     });
+    // }
+
+    // Retrieve the farmers and attempt to find the one matching the farm_id
+    // let farmers = entitymanagement::return_farmers();
+    // if let Some(farmer) = farmers.iter().find(|f| f.id == farm_id) {
+    //     let farm_name = farmer.farm_name.clone();
+
+    //     // Remove the farm from FARMER_STORAGE
+    //     entitymanagement::FARMER_STORAGE.with(|storage| {
+    //         storage.borrow_mut().remove(&farm_id);
+    //     });
+
+    //     // Remove the farm from REGISTERED_FARMERS
+    //     entitymanagement::REGISTERED_FARMERS.with(|registered_farmers| {
+    //         registered_farmers.borrow_mut().remove(&farm_name);
+    //     });
+
+    //     Ok(Success::FarmDeletedSuccessfully {
+    //         msg: format!("Farm with ID '{}' has been deleted successfully", farm_id),
+    //     })
+    // } else {
+    //     Err(Error::FarmNotFound {
+    //         msg: format!("Farm with ID '{}' doesn't exist", farm_id),
+    //     })
+    // }
+    let mut farmers = entitymanagement::return_farmers(); 
+
+    if let Some(_farmer) =  farmers.iter_mut().find(|f| f.id == farm_id) { 
+
+        entitymanagement::FARMER_STORAGE.with(|storage| {
+            storage.borrow_mut().remove(&farm_id);
+        });
+
+        // entitymanagement::REGISTERED_FARMERS.with(|registered_farmers| {
+        //     registered_farmers.borrow_mut().remove(&farm_id);
+        // });
+
+        Ok(Success::FarmDeletedSuccessfully {
+            msg: format!("Farm with ID '{}' has been deleted successfully", farm_id),
+        })
+    } else {
+            Err(Error::FarmNotFound {
+                msg: format!("Farm with ID '{}' doesn't exist", farm_id),
+            })
+        }
+}
+
+
+#[update]
+pub fn change_verification_status(farm_id: u64, new_status: bool) -> Result<Success, Error> {
+    match check_entity_type() {
+        EntityType::FarmsAgriBusiness => {
+            let mut success = false;
+            let mut farm_name = String::new();
+
+            entitymanagement::FARMER_STORAGE.with(|storage| {
+                if let Some(farmer) = storage.borrow().get(&farm_id) {
+                    let mut updated_farmer = farmer.clone();
+                    updated_farmer.verified = new_status;
+                    farm_name = updated_farmer.farm_name.clone();
+                    success = storage.borrow_mut().insert(farm_id, updated_farmer).is_some();
+                    
+                    // Also update in REGISTERED_FARMERS
+                    entitymanagement::REGISTERED_FARMERS.with(|farmers| {
+                        if let Some(registered_farmer) = farmers.borrow().get(&farm_name) {
+                            let mut updated_registered_farmer = registered_farmer.clone();
+                            updated_registered_farmer.verified = new_status;
+                            farmers.borrow_mut().insert(farm_name.clone(), updated_registered_farmer);
+                        }
+                    });
+                }
+            });
+
+            if success {
+                Ok(Success::FarmVerificationStatusChanged {
+                    msg: format!("Verification status for farm with ID '{}' has been changed to {}", farm_id, new_status),
+                })
+            } else {
+                Err(Error::FarmNotFound {
+                    msg: format!("Farm with ID '{}' not found", farm_id),
+                })
+            }
+        },
+        _ => Err(Error::NotAuthorized {
+            msg: "Only registered farms agribusinesses can change farm verification status".to_string(),
+        }),
+    }
 }

@@ -240,6 +240,7 @@ service : {
     ) query;
   calculate_total_investments_received_by_farm : (nat64) -> (float64) query;
   canister_deposit_principal : () -> (text) query;
+  change_verification_status : (nat64, bool) -> (Result);
   check_entity_type : () -> (EntityType) query;
   check_funding_round_expiry : (nat64) -> (Result_2);
   cketh_balance : () -> (nat);
@@ -249,6 +250,7 @@ service : {
   ckusdc_transfer : (text, nat) -> (Result_3);
   ckusdc_withdraw : (nat, text) -> (Result_4);
   delete_farmer_report : (nat64, nat64) -> (Result);
+  delete_single_farm : (nat64) -> (Result);
   delete_tag : (nat64, text) -> (Result_1);
   deposit_principal : (text) -> (text) query;
   display_farms : () -> (vec Farmer) query;
