@@ -266,6 +266,7 @@ service : {
   get_entity_details : () -> (EntityDetails) query;
   get_farmer_reports : (nat64) -> (opt vec FarmerReport) query;
   get_file : (text) -> (Result_10) query;
+  get_files_by_type : (nat64, text) -> (Result_8) query;
   get_investments_by_farm : (nat64) -> (
       opt vec record { nat64; float64; text; text },
     ) query;

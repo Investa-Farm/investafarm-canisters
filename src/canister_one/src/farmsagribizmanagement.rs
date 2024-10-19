@@ -169,7 +169,6 @@ pub fn check_file_status(file_id: u64) -> Result<bool, Error> {
         })
     }
 }
-
 // Add a new function to mark file as complete
 #[update]
 pub fn mark_file_complete(file_id: u64) -> Result<Success, Error> {
