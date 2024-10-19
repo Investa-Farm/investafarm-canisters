@@ -699,7 +699,9 @@ pub enum Success {
     AppliedForLoanSuccesfully { msg: String },
     ItemsAdded { msg: String },
     PartialDataStored { msg: String },
-    ReportDeletedSuccessfully { msg: String }
+    ReportDeletedSuccessfully { msg: String }, 
+    FileUploaded { msg: String },
+    FarmCreatedSuccessfully { msg: String }
 }
 
 // Error Messages
@@ -720,6 +722,7 @@ pub enum Error {
     ErrorOccured { msg: String },
     Error { msg: String },
     FileNotFound { msg: String },
+    UploadFailed { msg: String }
 }
 
 /** Login function
