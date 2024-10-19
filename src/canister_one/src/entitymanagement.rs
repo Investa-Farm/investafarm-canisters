@@ -321,8 +321,20 @@ pub struct SuppliedItems {
 pub enum OrderStatus {
     #[default]
     Pending,
+    Packed,
+    Sorted,
     Complete,
-    Cancelled,
+    Cancelled
+}
+
+/**
+* Shipping
+* Enum for the shipping of an option.
+*/
+#[derive(Default, Debug, Serialize, Deserialize, CandidType, Clone, PartialEq)]
+pub enum Shipping {
+    #[default]
+    Express
 }
 
 /**
@@ -340,6 +352,7 @@ pub struct Order {
     pub items: HashMap<String, (u64, u64)>, // item_name -> amount
     pub total_price: u64,
     pub status: OrderStatus,
+    pub shipping: Shipping
 }
 
 /**
@@ -359,6 +372,7 @@ impl Default for Order {
             items: HashMap::new(),
             total_price: 0,
             status: OrderStatus::Pending,
+            shipping: Shipping::Express,
         }
     }
 }
@@ -685,7 +699,9 @@ pub enum Success {
     AppliedForLoanSuccesfully { msg: String },
     ItemsAdded { msg: String },
     PartialDataStored { msg: String },
-    ReportDeletedSuccessfully { msg: String },
+    ReportDeletedSuccessfully { msg: String }, 
+    FileUploaded { msg: String },
+    FarmCreatedSuccessfully { msg: String },
 }
 
 // Error Messages
@@ -706,6 +722,7 @@ pub enum Error {
     ErrorOccured { msg: String },
     Error { msg: String },
     FileNotFound { msg: String },
+    UploadFailed { msg: String }
 }
 
 /** Login function

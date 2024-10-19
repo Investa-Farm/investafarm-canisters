@@ -15,7 +15,13 @@
     "canister_one": {
       "candid": "src/canister_one/canister_one.did",
       "package": "canister_one",
-      "type": "rust"
+      "type": "rust", 
+      "http_request": {
+        "max_response_bytes": 2048,
+        "max_request_bytes": 1024,
+        "max_requests_per_minute": 100,
+        "allowed_origins": ["http://217.76.59.68:4000"]
+      }
     }, 
     "canister_three": {
       "candid": "src/canister_three/canister_three.did",

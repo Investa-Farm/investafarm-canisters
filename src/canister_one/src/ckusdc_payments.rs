@@ -71,6 +71,23 @@ async fn verify_usdc_transaction(hash: String, farm_id: u64, investor_id: u64) -
     })
 }
 
+/// Store transaction fee separately
+async fn store_transaction_fee(hash: String, fee: f64) -> Result<(), String> {
+    transaction_fees::store_transaction_fee(hash, fee).map_err(|e| format!("Failed to store transaction fee: {}", e))
+}
+
+/// Store investment details separately
+#[ic_cdk::update]
+async fn store_investment(farm_id: u64, amount: f64, investor_id: u64, hash: String) -> Result<(), String> {
+    let deduction = amount * 0.005; // Calculate the transaction fee
+    store_transaction_fee(hash.clone(), deduction).await?; // Store the fee
+    let new_amount = amount - deduction; // Subtract the fee from the original amount
+
+    // Store the new investment amount after deduction
+    payments::store_investments(farm_id, new_amount, investor_id, hash, "ckUSDC".to_string())
+        .map_err(|e| format!("Failed to store investment: {}", e))
+}
+
 #[ic_cdk::update]
 async fn ckusdc_balance() -> Nat {
     let account = ICRCAccount::new(ic_cdk::id(), None);
