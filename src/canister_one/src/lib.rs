@@ -7,17 +7,18 @@ use crate::entitymanagement::EntityDetails;
 use crate::entitymanagement::Farmer;  
 use crate::entitymanagement::Investor;  
 use crate::entitymanagement::FarmsAgriBusiness; 
-use crate::farmsagribizmanagement::RegisterFarm; 
+use crate::farmsagribizmanagement::FileInfo; 
 use crate::ck_eth::receipt; 
 use crate::ck_eth::minter; 
 use crate::entitymanagement::FinancialReport;
 use crate::entitymanagement::FarmReport;
+use crate::entitymanagement::NewFarmer; 
 // use crate::askforloan;
 use ic_cdk::{query, update};
 use candid::Principal;
 use candid::Nat;
 
-use b3_utils::ledger::ICRC1TransferResult;
+use b3_utils::ledger::{ ICRC1TransferResult, ICRC2ApproveResult, ICRC2TransferFromResult};
 
 mod adminapproval;
 mod askforloan;
@@ -32,6 +33,8 @@ mod ck_eth_payments;
 mod transaction_fees;
 // mod supplymanagement;
 mod ckusdc_payments;
+mod ifarm_tokens;
+// mod exchange_rate;
 
 use ic_cdk::storage;
 

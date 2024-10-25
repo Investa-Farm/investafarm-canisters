@@ -27,6 +27,7 @@ type Error = variant {
   FileNotFound : record { msg : text };
   TagAlreadyExists : record { msg : text };
   InvestorNotFound : record { msg : text };
+  UploadFailed : record { msg : text };
   FarmNameTaken : record { msg : text };
   AgribusinessNotFound : record { msg : text };
 };
@@ -47,14 +48,14 @@ type Farmer = record {
   tags : opt vec text;
   loan_start_time : opt nat64;
   loaned : bool;
-  farm_reports : opt vec FarmReport_1;
+  farm_reports : opt vec FarmReport;
   amount_invested : opt nat64;
   funding_round_start_time : opt nat64;
   time_for_funding_round_to_expire : opt Duration;
   ifarm_tokens : opt nat64;
   farmer_name : text;
   insured : opt bool;
-  financial_reports : opt vec FinancialReport_1;
+  financial_reports : opt vec FinancialReport;
   publish : bool;
   principal_id : principal;
   farm_name : text;
@@ -79,6 +80,13 @@ type FarmsAgriBusiness = record {
   principal_id : principal;
   total_farmers : nat64;
 };
+type FileInfo = record {
+  agribusiness_name : text;
+  filename : text;
+  farms_uploaded : bool;
+  principal_id : principal;
+  file_id : nat64;
+};
 type FinancialReport = record {
   title : text;
   highlights : vec text;
@@ -92,6 +100,28 @@ type FinancialReport_1 = record {
 type ICRC1TransferError = variant {
   GenericError : record { message : text; error_code : nat };
   TemporarilyUnavailable;
+  BadBurn : record { min_burn_amount : nat };
+  Duplicate : record { duplicate_of : nat };
+  BadFee : record { expected_fee : nat };
+  CreatedInFuture : record { ledger_time : nat64 };
+  TooOld;
+  InsufficientFunds : record { balance : nat };
+};
+type ICRC2ApproveError = variant {
+  GenericError : record { message : text; error_code : nat };
+  TemporarilyUnavailable;
+  Duplicate : record { duplicate_of : nat };
+  BadFee : record { expected_fee : nat };
+  AllowanceChanged : record { current_allowance : nat };
+  CreatedInFuture : record { ledger_time : nat64 };
+  TooOld;
+  Expired : record { ledger_time : nat64 };
+  InsufficientFunds : record { balance : nat };
+};
+type ICRC2TransferFromError = variant {
+  GenericError : record { message : text; error_code : nat };
+  TemporarilyUnavailable;
+  InsufficientAllowance : record { allowance : nat };
   BadBurn : record { min_burn_amount : nat };
   Duplicate : record { duplicate_of : nat };
   BadFee : record { expected_fee : nat };
@@ -131,28 +161,26 @@ type Order = record {
   supply_agribusiness_id : nat64;
 };
 type OrderStatus = variant { Packed; Complete; Sorted; Cancelled; Pending };
-type RegisterFarm = record {
-  tags : opt vec text;
-  farm_reports : opt vec FarmReport_1;
-  farmer_name : opt text;
-  financial_reports : opt vec FinancialReport_1;
-  farm_name : opt text;
-  farm_description : opt text;
-  images : opt vec text;
-};
 type Result = variant { Ok : Success; Err : Error };
 type Result_1 = variant { Ok; Err : text };
-type Result_10 = variant { Ok : nat64; Err : Error };
-type Result_11 = variant { Ok; Err : Error };
-type Result_12 = variant { Ok : VerifiedTransactionDetails; Err : text };
+type Result_10 = variant { Ok : blob; Err : Error };
+type Result_11 = variant { Ok : nat64; Err : Error };
+type Result_12 = variant {
+  Ok : record { vec FileInfo; vec record { text; blob } };
+  Err : Error;
+};
+type Result_13 = variant { Ok : nat; Err : ICRC2ApproveError };
+type Result_14 = variant { Ok : nat; Err : ICRC2TransferFromError };
+type Result_15 = variant { Ok; Err : Error };
+type Result_16 = variant { Ok : VerifiedTransactionDetails; Err : text };
 type Result_2 = variant { Ok : text; Err : Error };
 type Result_3 = variant { Ok : nat; Err : ICRC1TransferError };
 type Result_4 = variant { Ok : RetrieveEthRequest; Err : WithdrawalError };
 type Result_5 = variant { Ok : Farmer; Err : Error };
 type Result_6 = variant { Ok : FarmsAgriBusiness; Err : Error };
 type Result_7 = variant { Ok : Investor; Err : Error };
-type Result_8 = variant { Ok : vec record { text; blob }; Err : Error };
-type Result_9 = variant { Ok : blob; Err : Error };
+type Result_8 = variant { Ok : nat64; Err : text };
+type Result_9 = variant { Ok : vec record { text; blob }; Err : Error };
 type RetrieveEthRequest = record { block_index : nat };
 type Section = record {
   title : text;
@@ -166,6 +194,7 @@ type Success = variant {
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
   SupplyAgriBusinessLogInSuccesfull : record { msg : text };
+  FarmCreatedSuccessfully : record { msg : text };
   ItemsAdded : record { msg : text };
   FarmsAgriBizRegisteredSuccesfully : record { msg : text };
   SupplyAgriBizRegisteredSuccesfully : record { msg : text };
@@ -176,6 +205,7 @@ type Success = variant {
   FarmCreatedSuccesfully : record { msg : text };
   FarmAddedSuccesfully : record { msg : text };
   TagDeletedSuccesfully : record { msg : text };
+  FileUploaded : record { msg : text };
   PartialDataStored : record { msg : text };
   FarmDeletedSuccesfully : record { msg : text };
   FarmsAgriBusinessUpdateSuccesfull : record { msg : text };
@@ -202,10 +232,6 @@ type WithdrawalError = variant {
 };
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
-  add_farm_images : (nat64, vec blob) -> (Result);
-  add_farm_reports : (nat64, opt vec FarmReport) -> (Result);
-  add_farm_tags : (nat64, opt vec text) -> (Result);
-  add_financial_reports : (nat64, opt vec FinancialReport) -> (Result);
   add_tag : (nat64, text) -> (Result_1);
   ask_for_loan : (nat64, nat64, TokenCollateral) -> (Result);
   calculate_total_investments_by_investor : (nat64) -> (float64) query;
@@ -214,6 +240,7 @@ service : {
     ) query;
   calculate_total_investments_received_by_farm : (nat64) -> (float64) query;
   canister_deposit_principal : () -> (text) query;
+  change_verification_status : (nat64, bool) -> (Result);
   check_entity_type : () -> (EntityType) query;
   check_funding_round_expiry : (nat64) -> (Result_2);
   cketh_balance : () -> (nat);
@@ -222,8 +249,8 @@ service : {
   ckusdc_balance : () -> (nat);
   ckusdc_transfer : (text, nat) -> (Result_3);
   ckusdc_withdraw : (nat, text) -> (Result_4);
-  delete_farm : (nat64) -> (Result);
   delete_farmer_report : (nat64, nat64) -> (Result);
+  delete_single_farm : (nat64) -> (Result);
   delete_tag : (nat64, text) -> (Result_1);
   deposit_principal : (text) -> (text) query;
   display_farms : () -> (vec Farmer) query;
@@ -233,12 +260,14 @@ service : {
   display_specific_farm_agribusiness : (principal) -> (Result_6) query;
   display_specific_investor : (principal) -> (Result_7) query;
   display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
-  get_all_files : () -> (Result_8) query;
+  fetch_credit_score : (blob, text) -> (Result_8);
+  get_all_files : () -> (Result_9) query;
   get_all_transaction_fees : () -> (vec record { text; float64 }) query;
   get_entity_details : () -> (EntityDetails) query;
   get_farmer_reports : (nat64) -> (opt vec FarmerReport) query;
   get_farms_for_agribusiness : () -> (vec Farmer) query;
   get_file : (text) -> (Result_9) query;
+  get_files_by_type : (nat64, text) -> (Result_8) query;
   get_investments_by_farm : (nat64) -> (
       opt vec record { nat64; float64; text; text },
     ) query;
@@ -246,31 +275,39 @@ service : {
       opt vec record { nat64; float64; text; text },
     ) query;
   get_receipt : (text) -> (text);
-  get_remaining_funding_time : (nat64) -> (Result_10) query;
-  get_remaining_loan_maturity_time : (nat64) -> (Result_10) query;
+  get_remaining_funding_time : (nat64) -> (Result_11) query;
+  get_remaining_loan_maturity_time : (nat64) -> (Result_11) query;
+  get_uploaded_files : () -> (Result_12);
   get_usdc_receipt : (text) -> (text);
-  initiate_loan : (nat64) -> (Result_11);
+  ifarm_approve : (principal, nat) -> (Result_13);
+  ifarm_balance : (principal) -> (nat);
+  ifarm_transfer : (principal, nat) -> (Result_3);
+  ifarm_transfer_from : (principal, principal, nat) -> (Result_14);
+  initiate_loan : (nat64) -> (Result_15);
+  is_allowed_principal : () -> (bool) query;
   log_in : () -> (Result) query;
-  publish_unpublish : (nat64, bool) -> (Result);
-  register_farm_details : (nat64, RegisterFarm, text) -> (Result);
+  mark_file_complete : (nat64) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
+  register_single_farm : (NewFarmer, nat64) -> (Result);
   register_supply_agribusiness : (NewSupplyAgriBusiness) -> (Result);
   register_your_farm : (NewFarmer) -> (Result);
+  store_investment : (nat64, float64, nat64, text) -> (Result_1);
   store_investments : (nat64, float64, nat64, text, text) -> (Result_1);
   store_transaction_fee : (text, float64) -> (Result_1);
   update_farmer_farm_details : (nat64, text, text) -> (Result_1);
   update_farms_agribusiness_name : (nat64, text) -> (Result_1);
   update_investor_name : (nat64, text) -> (Result_1);
   update_supply_agribusiness_name : (nat64, text) -> (Result_1);
+  upload_agribusiness_spreadsheet : (text, blob, text) -> ();
   upload_farm_report : (nat64, vec FarmReport_1) -> (Result);
   upload_file : (text, blob) -> (Result);
   upload_financial_report : (nat64, vec FinancialReport_1) -> (Result);
-  verify_cketh_transaction : (text, nat64, nat64) -> (Result_12);
-  verify_farmer : (nat64, bool) -> (Result_11);
-  verify_farms_agribusiness : (nat64, bool) -> (Result_11);
-  verify_investor : (nat64, bool) -> (Result_11);
-  verify_supply_agribusiness : (nat64, bool) -> (Result_11);
-  verify_usdc_transaction : (text, nat64, nat64) -> (Result_12);
+  verify_cketh_transaction : (text, nat64, nat64) -> (Result_16);
+  verify_farmer : (nat64, bool) -> (Result_15);
+  verify_farms_agribusiness : (nat64, bool) -> (Result_15);
+  verify_investor : (nat64, bool) -> (Result_15);
+  verify_supply_agribusiness : (nat64, bool) -> (Result_15);
+  verify_usdc_transaction : (text, nat64, nat64) -> (Result_16);
   who_am_i : () -> (principal);
 }

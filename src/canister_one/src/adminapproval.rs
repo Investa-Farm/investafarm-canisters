@@ -1,6 +1,6 @@
 use crate::entitymanagement;
-use candid::CandidType;
-use ic_cdk::update;
+use candid::{CandidType, Principal};
+use ic_cdk::{update, caller, query};
 use serde::{Deserialize, Serialize};
 
 // Error Messages
@@ -13,18 +13,28 @@ pub enum Error {
     FarmsAgriBizNotFound { msg: String },
 }
 
+// Define the function to check if the caller is allowed
+#[query]
+pub fn is_allowed_principal() -> bool {
+    let allowed_principals = vec![
+        Principal::from_text("u6mjj-6nldg-axc2d-yhwxu-324vw-aq4s2-n4l35-boxrh-4rnbn-qyz4m-pae").unwrap(),
+        Principal::from_text("grvsb-a7n2k-5ddft-lyfah-kl62t-ir2ih-4zvsc-ti5sf-qxboa-5f4zk-oae").unwrap(), 
+        Principal::from_text("ipd2t-z274n-iv4hx-ravmg-7yq3w-ownym-5zwnb-cfuu4-ayo4s-k7tp5-jae").unwrap()
+    ];
+
+    // Get the caller's principal
+    let caller_principal = caller();
+
+    // Check if the caller is in the allowed principals
+    allowed_principals.contains(&caller_principal)
+}
+
 #[update]
 pub fn verify_farmer(id: u64, verified: bool) -> Result<(), Error> {
-    // let caller = ic_cdk::caller();
-
-    // let allowed_principals = vec![
-    //    Principal::from_text("Insert principal ID here").unwrap(),
-    //    Principal::from_text("Insert second principal ID here").unwrap()
-    // ];
-
-    // if allowed_principals.contains(&caller) {
-    //     return Err(Error::PermissionDenied { msg: format!("You are not an admin!") })
-    // }
+    // Check if the caller is allowed
+    if !is_allowed_principal() {
+        return Err(Error::PermissionDenied { msg: format!("You are not an admin!") });
+    }
 
     let mut farmers = entitymanagement::return_farmers();
     if let Some(farmer) = farmers.iter_mut().find(|f| f.id == id) {
