@@ -101,7 +101,7 @@ pub fn add_supply_items(
  
                                  let order = Order {
                                      principal_id: caller(),
-                                     order_id: 0, // This could be updated later with a real ID generation logic
+                                     order_id: 0, 
                                      farmer_id: new_order.farmer_id,
                                      supply_agribusiness_id: new_order.supply_agribusiness_id,
                                      items: new_order.items.clone(),
