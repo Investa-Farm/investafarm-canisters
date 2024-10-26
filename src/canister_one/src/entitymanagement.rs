@@ -255,7 +255,7 @@ pub struct NewInvestor {
 pub struct SupplyAgriBusiness {
     pub id: u64,                   //Unique identifier for the business.
     pub agribusiness_name: String, //Name of the agricultural business.
-    pub items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business
+    pub items_to_be_supplied: Option<Vec<Product>>, //Items planned to be supplied by the business
     pub orders: Vec<Order>,
     //supplied_items: Option<SuppliedItems>,
     pub verified: bool,          //Indicates if the business is verified.
@@ -292,24 +292,20 @@ impl Default for SupplyAgriBusiness {
 #[derive(CandidType, Serialize, Deserialize, Clone)]
 pub struct NewSupplyAgriBusiness {
     pub agribusiness_name: String, //Name of the new agricultural business.
-    pub items_to_be_supplied: Option<AgribusinessItemsToBeSupplied>, //Items planned to be supplied by the business.
+    pub items_to_be_supplied: Option<Vec<Product>>, //Items planned to be supplied by the business.
 }
 
 /**
-* Type alias for items to be supplied by an agricultural business.
-*/
-type AgribusinessItemsToBeSupplied = Vec<(String, (u64, u64))>;
-
-/**
-* SuppliedItems Struct
+* Product Struct
 * Represents items supplied by an agricultural business.
 * @param Defined In-Line
 */
 #[derive(CandidType, Serialize, Deserialize, Clone)]
-pub struct SuppliedItems {
-    pub principal_id: Principal, //ID associated with the principal of the item.
+pub struct Product {
     pub item_name: String,       //Name of the item supplied.
     pub amount: u64,             //Amount of the item supplied.
+    pub tags: Option<Vec<String>>, //Search Tags
+    pub product_variation: String, //Product Variations
     pub price: u64,              // Price in I-Farm Tokens
 }
 
@@ -349,7 +345,7 @@ pub struct Order {
     pub order_id: u64,
     pub farmer_id: u64,
     pub supply_agribusiness_id: u64,
-    pub items: HashMap<String, (u64, u64)>, // item_name -> amount
+    pub items: Vec<Product>, 
     pub total_price: u64,
     pub status: OrderStatus,
     pub shipping: Shipping
@@ -369,7 +365,7 @@ impl Default for Order {
             order_id: 0,
             farmer_id: 0,
             supply_agribusiness_id: 0,
-            items: HashMap::new(),
+            items: Vec::new(),
             total_price: 0,
             status: OrderStatus::Pending,
             shipping: Shipping::Express,
@@ -387,7 +383,7 @@ impl Default for Order {
 pub struct NewOrder {
     pub farmer_id: u64,
     pub supply_agribusiness_id: u64,
-    pub items: HashMap<String, (u64, u64)>, // item_name -> amount
+    pub items: Vec<Product>, // item_name -> amount
     pub total_price: u64,
 }
 
