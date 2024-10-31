@@ -10,6 +10,7 @@ use crate::payments;
 use crate::transaction_fees;
 use crate::common::{eth_get_transaction_receipt, hex_string_with_0x_to_f64};
 use crate::ck_eth_payments::EVM_RPC;
+use crate::entitymanagement::{check_entity_type, EntityType};
 
 const USDC_HELPER: &str = "0x70e02abf44e62da8206130cd7ca5279a8f6d6241";
 const USDC_LEDGER: &str = "yfumr-cyaaa-aaaar-qaela-cai";
@@ -79,13 +80,18 @@ async fn store_transaction_fee(hash: String, fee: f64) -> Result<(), String> {
 /// Store investment details separately
 #[ic_cdk::update]
 async fn store_investment(farm_id: u64, amount: f64, investor_id: u64, hash: String) -> Result<(), String> {
-    let deduction = amount * 0.005; // Calculate the transaction fee
-    store_transaction_fee(hash.clone(), deduction).await?; // Store the fee
-    let new_amount = amount - deduction; // Subtract the fee from the original amount
+    // Verify caller is an Investor
+    match check_entity_type() {
+        EntityType::Investor => {
+            let deduction = amount * 0.005;
+            store_transaction_fee(hash.clone(), deduction).await?;
+            let new_amount = amount - deduction;
 
-    // Store the new investment amount after deduction
-    payments::store_investments(farm_id, new_amount, investor_id, hash, "ckUSDC".to_string())
-        .map_err(|e| format!("Failed to store investment: {}", e))
+            payments::store_investments(farm_id, new_amount, investor_id, hash, "ckUSDC".to_string())
+                .map_err(|e| format!("Failed to store investment: {}", e))
+        },
+        _ => Err("Only investors can store investments".to_string())
+    }
 }
 
 #[ic_cdk::update]
