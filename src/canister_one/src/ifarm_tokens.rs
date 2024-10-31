@@ -23,7 +23,17 @@ async fn collect_fee(amount: &Nat) -> ICRC1TransferResult {
     let fee_amount = (amount.0.to_f64().unwrap() * FEE_PERCENTAGE) as u64;
     let fee_collector = Principal::from_text(FEE_COLLECTOR_PRINCIPAL).unwrap();
     
-    Box::pin(ifarm_transfer(fee_collector, Nat::from(fee_amount))).await
+    let to = ICRCAccount::new(fee_collector, None);
+    let transfer_args = ICRC1TransferArgs {
+        to,
+        amount: Nat::from(fee_amount),
+        from_subaccount: None,
+        fee: None,
+        memo: None,
+        created_at_time: None,
+    };
+    
+    ICRC1::from(IFARM_TOKEN).transfer(transfer_args).await.unwrap()
 }
 
 // Check ifarm token balance
