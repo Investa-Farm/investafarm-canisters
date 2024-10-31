@@ -31,7 +31,8 @@ pub async fn ifarm_transfer(to: Principal, amount: Nat) -> ICRC1TransferResult {
         to,
         amount,
         from_subaccount: None,
-        fee: Some(Nat::from(10000u64)),
+        // fee: Some(Nat::from(10000u64)),
+        fee: None,
         memo: None,
         created_at_time: None,
     };
@@ -49,7 +50,8 @@ async fn ifarm_approve(spender: Principal, amount: Nat) -> ICRC2ApproveResult {
         from_subaccount: None,
         expected_allowance: None,
         expires_at: None,
-        fee: Some(Nat::from(10000u64)),
+        // fee: Some(Nat::from(10000u64)),
+        fee: None,
         memo: None,
         created_at_time: None,
     };
@@ -66,7 +68,8 @@ async fn ifarm_transfer_from(from: Principal, to: Principal, amount: Nat) -> ICR
         to,
         amount,
         spender_subaccount: None,
-        fee: Some(Nat::from(10000u64)),
+        // fee: Some(Nat::from(10000u64)),
+        fee: None,
         memo: None,
         created_at_time: None,
     };
