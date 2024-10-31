@@ -48,14 +48,14 @@ type Farmer = record {
   tags : opt vec text;
   loan_start_time : opt nat64;
   loaned : bool;
-  farm_reports : opt vec FarmReport;
+  farm_reports : opt vec FarmReport_1;
   amount_invested : opt nat64;
   funding_round_start_time : opt nat64;
   time_for_funding_round_to_expire : opt Duration;
   ifarm_tokens : opt nat64;
   farmer_name : text;
   insured : opt bool;
-  financial_reports : opt vec FinancialReport;
+  financial_reports : opt vec FinancialReport_1;
   publish : bool;
   principal_id : principal;
   farm_name : text;
@@ -170,9 +170,10 @@ type Result_12 = variant {
   Err : Error;
 };
 type Result_13 = variant { Ok : nat; Err : ICRC2ApproveError };
-type Result_14 = variant { Ok : nat; Err : ICRC2TransferFromError };
-type Result_15 = variant { Ok; Err : Error };
-type Result_16 = variant { Ok : VerifiedTransactionDetails; Err : text };
+type Result_14 = variant { Ok : Result_3; Err : text };
+type Result_15 = variant { Ok : nat; Err : ICRC2TransferFromError };
+type Result_16 = variant { Ok; Err : Error };
+type Result_17 = variant { Ok : VerifiedTransactionDetails; Err : text };
 type Result_2 = variant { Ok : text; Err : Error };
 type Result_3 = variant { Ok : nat; Err : ICRC1TransferError };
 type Result_4 = variant { Ok : RetrieveEthRequest; Err : WithdrawalError };
@@ -232,6 +233,9 @@ type WithdrawalError = variant {
 };
 service : {
   add_credit_score : (nat64, nat64) -> (Result);
+  add_farm_images : (nat64, vec blob) -> (Result);
+  add_farm_reports : (nat64, opt vec FarmReport) -> (Result);
+  add_financial_reports : (nat64, opt vec FinancialReport) -> (Result);
   add_tag : (nat64, text) -> (Result_1);
   ask_for_loan : (nat64, nat64, TokenCollateral) -> (Result);
   calculate_total_investments_by_investor : (nat64) -> (float64) query;
@@ -249,6 +253,7 @@ service : {
   ckusdc_balance : () -> (nat);
   ckusdc_transfer : (text, nat) -> (Result_3);
   ckusdc_withdraw : (nat, text) -> (Result_4);
+  delete_farm : (nat64) -> (Result);
   delete_farmer_report : (nat64, nat64) -> (Result);
   delete_single_farm : (nat64) -> (Result);
   delete_tag : (nat64, text) -> (Result_1);
@@ -266,8 +271,8 @@ service : {
   get_entity_details : () -> (EntityDetails) query;
   get_farmer_reports : (nat64) -> (opt vec FarmerReport) query;
   get_farms_for_agribusiness : () -> (vec Farmer) query;
-  get_file : (text) -> (Result_9) query;
-  get_files_by_type : (nat64, text) -> (Result_8) query;
+  get_file : (text) -> (Result_10) query;
+  get_files_by_type : (nat64, text) -> (Result_9) query;
   get_investments_by_farm : (nat64) -> (
       opt vec record { nat64; float64; text; text },
     ) query;
@@ -281,12 +286,13 @@ service : {
   get_usdc_receipt : (text) -> (text);
   ifarm_approve : (principal, nat) -> (Result_13);
   ifarm_balance : (principal) -> (nat);
-  ifarm_transfer : (principal, nat) -> (Result_3);
-  ifarm_transfer_from : (principal, principal, nat) -> (Result_14);
-  initiate_loan : (nat64) -> (Result_15);
+  ifarm_transfer : (principal, nat) -> (Result_14);
+  ifarm_transfer_from : (principal, principal, nat) -> (Result_15);
+  initiate_loan : (nat64) -> (Result_16);
   is_allowed_principal : () -> (bool) query;
   log_in : () -> (Result) query;
   mark_file_complete : (nat64) -> (Result);
+  publish_unpublish : (nat64, bool) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
   register_investor : (NewInvestor) -> (Result);
   register_single_farm : (NewFarmer, nat64) -> (Result);
@@ -303,11 +309,11 @@ service : {
   upload_farm_report : (nat64, vec FarmReport_1) -> (Result);
   upload_file : (text, blob) -> (Result);
   upload_financial_report : (nat64, vec FinancialReport_1) -> (Result);
-  verify_cketh_transaction : (text, nat64, nat64) -> (Result_16);
-  verify_farmer : (nat64, bool) -> (Result_15);
-  verify_farms_agribusiness : (nat64, bool) -> (Result_15);
-  verify_investor : (nat64, bool) -> (Result_15);
-  verify_supply_agribusiness : (nat64, bool) -> (Result_15);
-  verify_usdc_transaction : (text, nat64, nat64) -> (Result_16);
+  verify_cketh_transaction : (text, nat64, nat64) -> (Result_17);
+  verify_farmer : (nat64, bool) -> (Result_16);
+  verify_farms_agribusiness : (nat64, bool) -> (Result_16);
+  verify_investor : (nat64, bool) -> (Result_16);
+  verify_supply_agribusiness : (nat64, bool) -> (Result_16);
+  verify_usdc_transaction : (text, nat64, nat64) -> (Result_17);
   who_am_i : () -> (principal);
 }

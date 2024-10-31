@@ -13,6 +13,7 @@ use b3_utils::ledger::{
 };
 use candid::{Principal, Nat};
 use num_traits::ToPrimitive;
+use crate::entitymanagement::{check_entity_type, EntityType};
 // use crate::LEDGER;
 
 const IFARM_TOKEN: &str = "lradw-laaaa-aaaam-acrda-cai";
@@ -43,27 +44,30 @@ async fn ifarm_balance(principal_id: Principal) -> Nat {
     ICRC1::from(IFARM_TOKEN).balance_of(account).await.unwrap()
 }   
 
-// Transfer ifarm token
 #[ic_cdk::update]
-pub async fn ifarm_transfer(to: Principal, amount: Nat) -> ICRC1TransferResult {
-    // First collect the fee
-    let fee_amount = (amount.0.to_f64().unwrap() * FEE_PERCENTAGE) as u64;
-    let _ = collect_fee(&amount).await;
+pub async fn ifarm_transfer(to: Principal, amount: Nat) -> Result<ICRC1TransferResult, String> {
+    match check_entity_type() {
+        EntityType::NotRegistered => {
+            Err("Caller is not registered".to_string())
+        },
+        _ => {
+            let fee_amount = (amount.0.to_f64().unwrap() * FEE_PERCENTAGE) as u64;
+            let _ = collect_fee(&amount).await;
 
-    // Calculate remaining amount after fee deduction
-    let transfer_amount = amount - Nat::from(fee_amount);
+            let transfer_amount = amount - Nat::from(fee_amount);
 
-    let to = ICRCAccount::new(to, None);
-    let transfer_args = ICRC1TransferArgs {
-        to,
-        amount: transfer_amount,
-        from_subaccount: None,
-        // fee: Some(Nat::from(10000u64)),
-        fee: None,
-        memo: None,
-        created_at_time: None,
-    };
-    ICRC1::from(IFARM_TOKEN).transfer(transfer_args).await.unwrap()
+            let to = ICRCAccount::new(to, None);
+            let transfer_args = ICRC1TransferArgs {
+                to,
+                amount: transfer_amount,
+                from_subaccount: None,
+                fee: None,
+                memo: None,
+                created_at_time: None,
+            };
+            Ok(ICRC1::from(IFARM_TOKEN).transfer(transfer_args).await.unwrap())
+        }
+    }
 }
 
 // Approve ifarm token
