@@ -12,9 +12,19 @@ use b3_utils::ledger::{
     // ICRC2Allowance
 };
 use candid::{Principal, Nat};
+use num_traits::ToPrimitive;
 // use crate::LEDGER;
 
 const IFARM_TOKEN: &str = "lradw-laaaa-aaaam-acrda-cai";
+const FEE_COLLECTOR_PRINCIPAL: &str = "3r4ur-bi57q-dnrjp-fdl3f-pd5ud-gux43-l6bk6-ff7p3-33zk4-nx7ym-mqe";
+const FEE_PERCENTAGE: f64 = 0.01; 
+
+async fn collect_fee(amount: &Nat) -> ICRC1TransferResult {
+    let fee_amount = (amount.0.to_f64().unwrap() * FEE_PERCENTAGE) as u64;
+    let fee_collector = Principal::from_text(FEE_COLLECTOR_PRINCIPAL).unwrap();
+    
+    Box::pin(ifarm_transfer(fee_collector, Nat::from(fee_amount))).await
+}
 
 // Check ifarm token balance
 #[ic_cdk::update]
@@ -26,10 +36,17 @@ async fn ifarm_balance(principal_id: Principal) -> Nat {
 // Transfer ifarm token
 #[ic_cdk::update]
 pub async fn ifarm_transfer(to: Principal, amount: Nat) -> ICRC1TransferResult {
+    // First collect the fee
+    let fee_amount = (amount.0.to_f64().unwrap() * FEE_PERCENTAGE) as u64;
+    let _ = collect_fee(&amount).await;
+
+    // Calculate remaining amount after fee deduction
+    let transfer_amount = amount - Nat::from(fee_amount);
+
     let to = ICRCAccount::new(to, None);
     let transfer_args = ICRC1TransferArgs {
         to,
-        amount,
+        amount: transfer_amount,
         from_subaccount: None,
         // fee: Some(Nat::from(10000u64)),
         fee: None,
