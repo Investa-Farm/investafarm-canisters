@@ -96,16 +96,11 @@ async fn ifarm_approve(owner: Principal, spender: Principal, amount: Nat) -> Res
 // Transfer ifarm token
 #[ic_cdk::update]
 pub async fn ifarm_transfer_from(from: Principal, to: Principal, amount: Nat) -> Result<ICRC2TransferFromResult, String> {
-    // First approve the transfer from the owner's account
-    let _ = ifarm_approve(from, to, amount.clone()).await
-        .map_err(|e| format!("Failed to approve transfer: {}", e))?;
-
-    // Then perform the transfer
-    let from_account = ICRCAccount::new(from, None);
-    let to_account = ICRCAccount::new(to, None);
+    let from = ICRCAccount::new(from, None);
+    let to = ICRCAccount::new(to, None);
     let transfer_from_args = ICRC2TransferFromArgs {
-        from: from_account,
-        to: to_account,
+        from,
+        to, 
         amount,
         spender_subaccount: None,
         fee: None,
