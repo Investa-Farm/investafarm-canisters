@@ -72,40 +72,48 @@ pub async fn ifarm_transfer(to: Principal, amount: Nat) -> Result<ICRC1TransferR
 
 // Approve ifarm token
 #[ic_cdk::update]
-async fn ifarm_approve(spender: Principal, amount: Nat) -> ICRC2ApproveResult {
-    // let subaccount = ICRCAccount::new(subaccount, None);
-    let spender = ICRCAccount::new(spender, None);
+async fn ifarm_approve(owner: Principal, spender: Principal, amount: Nat) -> Result<ICRC2ApproveResult, String> {
+    if owner == spender {
+        return Err("Owner and spender cannot be the same".to_string());
+    }
+
+    let spender_account = ICRCAccount::new(spender, None);
+
     let approve_args = ICRC2ApproveArgs {
-        spender,
+        spender: spender_account,
         amount,
         from_subaccount: None,
         expected_allowance: None,
         expires_at: None,
-        // fee: Some(Nat::from(10000u64)),
         fee: None,
         memo: None,
         created_at_time: None,
     };
-    ICRC2::from(IFARM_TOKEN).approve(approve_args).await.unwrap()
+
+    ICRC2::from(IFARM_TOKEN).approve(approve_args).await.map_err(|e| format!("Approval failed: {:?}", e))
 }
 
 // Transfer ifarm token
 #[ic_cdk::update]
-async fn ifarm_transfer_from(from: Principal, to: Principal, amount: Nat) -> ICRC2TransferFromResult {
-    let from = ICRCAccount::new(from, None);
-    let to = ICRCAccount::new(to, None);
+pub async fn ifarm_transfer_from(from: Principal, to: Principal, amount: Nat) -> Result<ICRC2TransferFromResult, String> {
+    // First approve the transfer from the owner's account
+    let _ = ifarm_approve(from, to, amount.clone()).await
+        .map_err(|e| format!("Failed to approve transfer: {}", e))?;
+
+    // Then perform the transfer
+    let from_account = ICRCAccount::new(from, None);
+    let to_account = ICRCAccount::new(to, None);
     let transfer_from_args = ICRC2TransferFromArgs {
-        from, 
-        to,
+        from: from_account,
+        to: to_account,
         amount,
         spender_subaccount: None,
-        // fee: Some(Nat::from(10000u64)),
         fee: None,
         memo: None,
         created_at_time: None,
     };
-    // ICRC2::from(IFARM_TOKEN).transfer_from(transfer_from_args).await.map_err(|e| e.into())
-    ICRC2::from(IFARM_TOKEN).transfer_from(transfer_from_args).await.unwrap()
+
+    Ok(ICRC2::from(IFARM_TOKEN).transfer_from(transfer_from_args).await.unwrap())
 }
 
 // Check token allowance
