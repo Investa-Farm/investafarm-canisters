@@ -27,6 +27,11 @@
       "candid": "src/canister_three/canister_three.did",
       "package": "canister_three",
       "type": "rust"
+    }, 
+    "ifarm_tokens" : { 
+      "candid": "src/ifarm_tokens/ifarm_tokens.did",
+      "package": "ifarm_tokens",
+      "type": "rust"
     }
   },
   "defaults": {
