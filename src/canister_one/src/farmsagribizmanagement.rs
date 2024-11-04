@@ -388,53 +388,46 @@ pub fn change_verification_status(farm_id: u64, new_status: bool) -> Result<Succ
 }
 
 #[update]
-fn add_farm_images(
-    farm_id: u64,
-    images: Vec<Vec<u8>>,
-) -> Result<entitymanagement::Success, entitymanagement::Error> {
+fn add_farm_images(farm_id: u64, images: Vec<Vec<u8>>) -> Result<entitymanagement::Success, entitymanagement::Error> {
     let caller = ic_cdk::caller();
 
-    // Check both storages for the farm
-    let mut farm = entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+    // First verify the farm exists and belongs to the caller
+    let farm = entitymanagement::FARMER_STORAGE
         .with(|storage| storage.borrow().get(&farm_id).clone())
-        .or_else(|| {
-            entitymanagement::FARMER_STORAGE.with(|storage| storage.borrow().get(&farm_id).clone())
-        })
         .ok_or_else(|| entitymanagement::Error::NotAuthorized {
-            msg: format!("Farm with ID {} not found in either storage!", farm_id),
+            msg: format!("Farm with ID {} not found", farm_id),
         })?;
 
-    if farm.principal_id == caller {
-        // Generate image references (you might want to use a more sophisticated method)
-        let image_refs: Vec<String> = images
-            .iter()
-            .enumerate()
-            .map(|(index, _)| format!("image_{}", index))
-            .collect();
-
-        // Store the actual images
-        FARM_IMAGES.with(|images_storage| {
-            let mut images_storage = images_storage.borrow_mut();
-            images_storage.insert(farm_id, images);
-        });
-
-        // Update the farm's image references
-        farm.images = Some(image_refs);
-
-        // Update both storages
-        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
-            .with(|service| service.borrow_mut().insert(farm_id, farm.clone()));
-
-        entitymanagement::FARMER_STORAGE.with(|service| service.borrow_mut().insert(farm_id, farm));
-
-        Ok(entitymanagement::Success::PartialDataStored {
-            msg: "Images added successfully and linked to the farm.".to_string(),
-        })
-    } else {
-        Err(entitymanagement::Error::NotAuthorized {
+    if farm.principal_id != caller {
+        return Err(entitymanagement::Error::NotAuthorized {
             msg: "You are not authorized to modify this farm.".to_string(),
-        })
+        });
     }
+
+    // Merge existing images with new ones
+    FARM_IMAGES.with(|images_storage| {
+        let mut storage = images_storage.borrow_mut();
+        let existing_images = storage.entry(farm_id).or_insert(Vec::new());
+        existing_images.extend(images.clone());
+    });
+
+    // Generate image references for all images
+    let image_refs: Vec<String> = FARM_IMAGES.with(|images_storage| {
+        let storage = images_storage.borrow();
+        let total_images = storage.get(&farm_id).map(|imgs| imgs.len()).unwrap_or(0);
+        (0..total_images).map(|index| format!("image_{}", index)).collect()
+    });
+
+    // Update farm with all image references
+    let mut updated_farm = farm;
+    updated_farm.images = Some(image_refs);
+    
+    entitymanagement::FARMER_STORAGE
+        .with(|storage| storage.borrow_mut().insert(farm_id, updated_farm.clone()));
+
+    Ok(entitymanagement::Success::PartialDataStored {
+        msg: "Images added successfully".to_string(),
+    })
 }
 #[update]
 fn add_financial_reports(
@@ -588,4 +581,32 @@ fn delete_farm(farm_id: u64) -> Result<entitymanagement::Success, entitymanageme
             msg: format!("An error occured!"),
         })
     }
+}
+#[query]
+fn get_farm_images(farm_id: u64) -> Result<Vec<Vec<u8>>, entitymanagement::Error> {
+    let caller = ic_cdk::caller();
+
+    // First verify the farm exists
+    let farm = entitymanagement::FARMER_STORAGE
+        .with(|storage| storage.borrow().get(&farm_id).clone())
+        .ok_or_else(|| entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm with ID {} not found", farm_id),
+        })?;
+
+    // Get images from storage
+    let images = FARM_IMAGES.with(|images_storage| {
+        images_storage
+            .borrow()
+            .get(&farm_id)
+            .cloned()
+            .unwrap_or_default()
+    });
+
+    if images.is_empty() {
+        return Err(entitymanagement::Error::ErrorOccured {
+            msg: format!("No images found for farm {}", farm_id)
+        });
+    }
+
+    Ok(images)
 }
