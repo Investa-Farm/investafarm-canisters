@@ -404,23 +404,24 @@ fn add_farm_images(farm_id: u64, images: Vec<Vec<u8>>) -> Result<entitymanagemen
         });
     }
 
-    // Generate image references
-    let image_refs: Vec<String> = images
-        .iter()
-        .enumerate()
-        .map(|(index, _)| format!("image_{}", index))
-        .collect();
-
-    // Store the actual images
+    // Merge existing images with new ones
     FARM_IMAGES.with(|images_storage| {
-        images_storage.borrow_mut().insert(farm_id, images);
+        let mut storage = images_storage.borrow_mut();
+        let existing_images = storage.entry(farm_id).or_insert(Vec::new());
+        existing_images.extend(images.clone());
     });
 
-    // Update the farm with image references
+    // Generate image references for all images
+    let image_refs: Vec<String> = FARM_IMAGES.with(|images_storage| {
+        let storage = images_storage.borrow();
+        let total_images = storage.get(&farm_id).map(|imgs| imgs.len()).unwrap_or(0);
+        (0..total_images).map(|index| format!("image_{}", index)).collect()
+    });
+
+    // Update farm with all image references
     let mut updated_farm = farm;
     updated_farm.images = Some(image_refs);
-
-    // Update both storages
+    
     entitymanagement::FARMER_STORAGE
         .with(|storage| storage.borrow_mut().insert(farm_id, updated_farm.clone()));
 
