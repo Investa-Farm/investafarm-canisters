@@ -10,6 +10,7 @@ use std::{borrow::Cow, cell::RefCell}; //interior mutability with runtime borrow
                                        // use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
 use std::time::Duration;
+use std::fmt;
 
 /**
 * Memory Type Alias
@@ -701,7 +702,7 @@ pub enum Success {
 }
 
 // Error Messages
-#[derive(CandidType, Deserialize, Serialize)]
+#[derive(CandidType, Deserialize, Serialize, Debug)]
 pub enum Error {
     MismatchId { msg: String },
     FieldEmpty { msg: String },
@@ -719,6 +720,29 @@ pub enum Error {
     Error { msg: String },
     FileNotFound { msg: String },
     UploadFailed { msg: String }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        match self {
+            Error::MismatchId { msg } => write!(f, "{}", msg),
+            Error::FieldEmpty { msg } => write!(f, "{}", msg),
+            Error::ItemsNotEmpty { msg } => write!(f, "{}", msg),
+            Error::InvestorNotFound { msg } => write!(f, "{}", msg),
+            Error::FarmerNotFound { msg } => write!(f, "{}", msg),
+            Error::TagAlreadyExists { msg } => write!(f, "{}", msg),
+            Error::TagNotFound { msg } => write!(f, "{}", msg),
+            Error::AgribusinessNotFound { msg } => write!(f, "{}", msg),
+            Error::FarmNameTaken { msg } => write!(f, "{}", msg),
+            Error::PrincipalIdAlreadyRegistered { msg } => write!(f, "{}", msg),
+            Error::YouAreNotRegistered { msg } => write!(f, "{}", msg),
+            Error::NotAuthorized { msg } => write!(f, "{}", msg),
+            Error::ErrorOccured { msg } => write!(f, "{}", msg),
+            Error::Error { msg } => write!(f, "{}", msg),
+            Error::FileNotFound { msg } => write!(f, "{}", msg),
+            Error::UploadFailed { msg } => write!(f, "{}", msg),
+        }
+    }
 }
 
 /** Login function

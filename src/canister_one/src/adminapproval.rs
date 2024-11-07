@@ -19,7 +19,8 @@ pub fn is_allowed_principal() -> bool {
     let allowed_principals = vec![
         Principal::from_text("u6mjj-6nldg-axc2d-yhwxu-324vw-aq4s2-n4l35-boxrh-4rnbn-qyz4m-pae").unwrap(),
         Principal::from_text("grvsb-a7n2k-5ddft-lyfah-kl62t-ir2ih-4zvsc-ti5sf-qxboa-5f4zk-oae").unwrap(), 
-        Principal::from_text("ipd2t-z274n-iv4hx-ravmg-7yq3w-ownym-5zwnb-cfuu4-ayo4s-k7tp5-jae").unwrap()
+        Principal::from_text("ipd2t-z274n-iv4hx-ravmg-7yq3w-ownym-5zwnb-cfuu4-ayo4s-k7tp5-jae").unwrap(), 
+        Principal::from_text("3ut3n-6rt35-45boi-6vidq-fur7n-5jlvg-wggto-dqwcr-gwtuk-rst7y-zae").unwrap()
     ];
 
     // Get the caller's principal
