@@ -584,10 +584,10 @@ fn delete_farm(farm_id: u64) -> Result<entitymanagement::Success, entitymanageme
 }
 #[query]
 fn get_farm_images(farm_id: u64) -> Result<Vec<Vec<u8>>, entitymanagement::Error> {
-    let caller = ic_cdk::caller();
+    let _caller = ic_cdk::caller();
 
     // First verify the farm exists
-    let farm = entitymanagement::FARMER_STORAGE
+    let _farm = entitymanagement::FARMER_STORAGE
         .with(|storage| storage.borrow().get(&farm_id).clone())
         .ok_or_else(|| entitymanagement::Error::NotAuthorized {
             msg: format!("Farm with ID {} not found", farm_id),
