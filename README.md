@@ -2,7 +2,8 @@
 Welcome to Investa Farm Canisters. This repository contains the different backend logic for Investa Farm Site 
 
 ## Mainnet Deployement Link:
-URL for 1st mainnet deployement: ``https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=4p7ji-qaaaa-aaaal-qjabq-cai`` (Canister One)
+Canister One: [Link](https://a4gq6-oaaaa-aaaab-qaa4q-cai.raw.icp0.io/?id=4p7ji-qaaaa-aaaal-qjabq-cai)
+iFarm Token dashboard: [Link](https://dashboard.internetcomputer.org/canister/lradw-laaaa-aaaam-acrda-cai)
 
 ## Getting started: 
 Clone the repository
@@ -28,24 +29,5 @@ A detailed explanation of the user flow can be found ove [here](https://docs.goo
 
 The architecture is divided into two sections: 
 
-1. Canister one: responsible for entity management and ordering of items from supply agri business 
-2. Payments smart contract: payments smart contract responsible for payments in USDC and USDT (Stablecoins) [Link](https://github.com/Investa-Farm/investafarm-payments)
-
-## Running the code: 
-1. Step 1: Starting the local replica: 
-```
-dfx start --clean --background
-```
-
-2. Step 2: Generating the candid file: 
-```
-For canister 1: 
-./canister_one_did.sh && dfx generate canister_one
-
-
-3. Step 3: Deploying the canister locally 
-```
-For canister 1: 
-dfx deploy canister_one 
-
-```
+1. Canister one: responsible for entity management i.e farmer, investor, farm agri business and supply agrostores
+2. iFarm Tokens: iFarm Token canister. 
