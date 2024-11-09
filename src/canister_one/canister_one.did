@@ -44,6 +44,7 @@ type Farmer = record {
   verified : bool;
   current_loan_ask : opt nat64;
   token_collateral : opt TokenCollateral;
+  kyc_job_id : opt text;
   farm_assets : opt vec record { text; record { nat64; nat64 } };
   tags : opt vec text;
   loan_start_time : opt nat64;
@@ -76,6 +77,7 @@ type FarmerReport = record {
 type FarmsAgriBusiness = record {
   id : nat64;
   verified : bool;
+  kyc_job_id : opt text;
   agribusiness_name : text;
   principal_id : principal;
   total_farmers : nat64;
@@ -132,6 +134,7 @@ type ICRC2TransferFromError = variant {
 type Investor = record {
   id : nat64;
   verified : bool;
+  kyc_job_id : opt text;
   name : text;
   principal_id : principal;
   saved_farms : opt vec nat64;
@@ -228,6 +231,7 @@ type Success = variant {
 type SupplyAgriBusiness = record {
   id : nat64;
   verified : bool;
+  kyc_job_id : opt text;
   orders : vec Order;
   agribusiness_name : text;
   items_to_be_supplied : opt vec Product;
@@ -323,10 +327,10 @@ service : {
   upload_file : (text, blob) -> (Result);
   upload_financial_report : (nat64, vec FinancialReport_1) -> (Result);
   verify_cketh_transaction : (text, nat64, nat64) -> (Result_20);
-  verify_farmer : (nat64, bool) -> (Result_19);
-  verify_farms_agribusiness : (nat64, bool) -> (Result_19);
-  verify_investor : (nat64, bool) -> (Result_19);
-  verify_supply_agribusiness : (nat64, bool) -> (Result_19);
+  verify_farmer : (nat64, bool, text) -> (Result_19);
+  verify_farms_agribusiness : (nat64, bool, text) -> (Result_19);
+  verify_investor : (nat64, bool, text) -> (Result_19);
+  verify_supply_agribusiness : (nat64, bool, text) -> (Result_19);
   verify_usdc_transaction : (text, nat64, nat64) -> (Result_20);
   who_am_i : () -> (principal);
 }
