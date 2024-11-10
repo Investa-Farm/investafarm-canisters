@@ -62,6 +62,7 @@ pub struct Farmer {
     // pub reports: Option<Reports>,
     pub financial_reports: Option<Vec<FinancialReport>>, // Optional financial reports containing financial and farm-related information
     pub farm_reports: Option<Vec<FarmReport>>, // Optional farm reports containing financial and farm-related information
+    pub kyc_job_id: Option<String>, // For storing the KYC job ID
 }
 
 /**
@@ -183,6 +184,7 @@ impl Default for Farmer {
             // reports: None
             financial_reports: None,
             farm_reports: None,
+            kyc_job_id: None
         }
     }
 }
@@ -212,8 +214,9 @@ pub struct Investor {
     pub id: u64,                       //Unique identifier for the investor.
     name: String,                      //Name of the investor.
     pub verified: bool,                //Indicates if the investor is verified.
-    principal_id: Principal,           //Investor's principal ID.
+    pub principal_id: Principal,           //Investor's principal ID.
     pub saved_farms: Option<Vec<u64>>, // List of saved farm IDs.
+    pub kyc_job_id: Option<String>, // For storing the KYC job ID
 }
 
 /**
@@ -231,6 +234,7 @@ impl Default for Investor {
             verified: false,
             principal_id: Principal::anonymous(),
             saved_farms: None,
+            kyc_job_id: None 
         }
     }
 }
@@ -261,6 +265,7 @@ pub struct SupplyAgriBusiness {
     //supplied_items: Option<SuppliedItems>,
     pub verified: bool,          //Indicates if the business is verified.
     pub principal_id: Principal, //ID associated with the business's principal.
+    pub kyc_job_id: Option<String>, // For storing the KYC job ID
 }
 
 /**
@@ -280,6 +285,7 @@ impl Default for SupplyAgriBusiness {
             //supplied_items: SuppliedItems,
             verified: false,
             principal_id: Principal::anonymous(),
+            kyc_job_id: None 
         }
     }
 }
@@ -401,6 +407,7 @@ pub struct FarmsAgriBusiness {
     pub total_farmers: u64,        //Total number of the farmers associated.
     pub principal_id: Principal,   //Farms agribusiness principle ID.
     pub verified: bool,
+    pub kyc_job_id: Option<String>, // For storing the KYC job ID
     // pub farms: Option<FarmsForAgriBusiness>
 }
 
@@ -419,6 +426,7 @@ impl Default for FarmsAgriBusiness {
             total_farmers: 0,
             verified: false,
             principal_id: Principal::anonymous(),
+            kyc_job_id: None
             //  farms: None
         }
     }
@@ -819,6 +827,7 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         images: None,
         farm_reports: None,
         financial_reports: None,
+        kyc_job_id: None
     };
 
     // Mapping farmer name
@@ -1015,6 +1024,7 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
         name: new_investor.name,
         verified: false,
         saved_farms: None,
+        kyc_job_id: None
     };
 
     let investor_clone1 = investor.clone();
@@ -1069,6 +1079,7 @@ pub fn register_supply_agribusiness(
         //supplied_items: SuppliedItems,
         verified: false,
         principal_id: new_supply_agribusiness_principal_id,
+        kyc_job_id: None
     };
 
     let supply_agri_business_clone1 = supply_agri_business.clone();
@@ -1126,6 +1137,7 @@ pub fn register_farms_agribusiness(
         verified: false,
         principal_id: new_farms_agribusiness_principal_id,
         total_farmers: new_farms_agribusiness.total_farmers,
+        kyc_job_id: None
         // farms: new_farms_agribusiness.farms
     };
 
