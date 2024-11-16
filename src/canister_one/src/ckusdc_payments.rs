@@ -10,8 +10,8 @@ use crate::payments;
 use crate::transaction_fees;
 use crate::common::{eth_get_transaction_receipt, hex_string_with_0x_to_f64};
 use crate::ck_eth_payments::EVM_RPC;
-use crate::entitymanagement::{check_entity_type, EntityType, display_specific_farm};
-use crate::ifarm_tokens;
+use crate::entitymanagement::{check_entity_type, EntityType };
+// use crate::ifarm_tokens;
 
 const USDC_HELPER: &str = "0x70e02abf44e62da8206130cd7ca5279a8f6d6241";
 const USDC_LEDGER: &str = "yfumr-cyaaa-aaaar-qaela-cai";
@@ -92,14 +92,14 @@ async fn store_investment(farm_id: u64, amount: f64, investor_id: u64, hash: Str
             payments::store_investments(farm_id, new_amount, investor_id, hash, "ckUSDC".to_string())?;
 
            // Get farmer's principal from farm_id
-           let farmer = display_specific_farm(farm_id)
-               .map_err(|e| format!("Failed to get farmer details: {}", e))?;
+           // let farmer = display_specific_farm(farm_id)
+           //    .map_err(|e| format!("Failed to get farmer details: {}", e))?;
             
             // Transfer iFarm tokens from farmer to investor
-            let ifarm_amount = Nat::from((new_amount as u64) * 1_000_000);
-            let investor = ic_cdk::caller();
-            let _ = ifarm_tokens::ifarm_transfer_from(farmer.principal_id, investor, ifarm_amount).await
-                .map_err(|e| format!("Failed to transfer iFarm tokens: {}", e))?;
+            // let ifarm_amount = Nat::from((new_amount as u64) * 1_000_000);
+            // let investor = ic_cdk::caller();
+            // let _ = ifarm_tokens::ifarm_transfer_from(farmer.principal_id, investor, ifarm_amount).await
+            //     .map_err(|e| format!("Failed to transfer iFarm tokens: {}", e))?;
 
             Ok(())
         },
