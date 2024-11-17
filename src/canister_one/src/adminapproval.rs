@@ -184,3 +184,71 @@ pub fn verify_farms_agribusiness(id: u64, verified: bool, kyc_job_id: String) ->
         })
     }
 }
+
+#[update]
+fn manual_verify_entity(entity_type: String, id: u64, verified: bool) -> Result<(), Error> {
+    // Ensure only admins can manually verify entities
+    if !is_allowed_principal() {
+        return Err(Error::PermissionDenied { 
+            msg: String::from("Caller must be an admin to manually verify entities")
+        });
+    }
+
+    match entity_type.as_str() {
+        "farmer" => {
+            let mut farmers = entitymanagement::return_farmers();
+            if let Some(farmer) = farmers.iter_mut().find(|f| f.id == id) {
+                farmer.verified = verified;
+                entitymanagement::FARMER_STORAGE
+                    .with(|service| service.borrow_mut().insert(id, farmer.clone()));
+                Ok(())
+            } else {
+                Err(Error::FarmerNotFound {
+                    msg: format!("Farmer with id {} doesn't exist", id),
+                })
+            }
+        },
+        "investor" => {
+            let mut investors = entitymanagement::return_investors();
+            if let Some(investor) = investors.iter_mut().find(|i| i.id == id) {
+                investor.verified = verified;
+                entitymanagement::INVESTOR_STORAGE
+                    .with(|service| service.borrow_mut().insert(id, investor.clone()));
+                Ok(())
+            } else {
+                Err(Error::InvestorNotFound {
+                    msg: format!("Investor with id {} doesn't exist", id),
+                })
+            }
+        },
+        "supply_agribusiness" => {
+            let mut supply_agribusinesses = entitymanagement::return_supply_agribusiness();
+            if let Some(agribiz) = supply_agribusinesses.iter_mut().find(|s| s.id == id) {
+                agribiz.verified = verified;
+                entitymanagement::SUPPLY_AGRIBUSINESS_STORAGE
+                    .with(|service| service.borrow_mut().insert(id, agribiz.clone()));
+                Ok(())
+            } else {
+                Err(Error::SupplyAgriBizNotFound {
+                    msg: format!("Supply agribusiness with id {} doesn't exist", id),
+                })
+            }
+        },
+        "farms_agribusiness" => {
+            let mut farms_agribusinesses = entitymanagement::return_farms_agribusiness();
+            if let Some(agribiz) = farms_agribusinesses.iter_mut().find(|s| s.id == id) {
+                agribiz.verified = verified;
+                entitymanagement::FARMS_AGRIBUSINESS_STORAGE
+                    .with(|service| service.borrow_mut().insert(id, agribiz.clone()));
+                Ok(())
+            } else {
+                Err(Error::FarmsAgriBizNotFound {
+                    msg: format!("Farms agribusiness with id {} doesn't exist", id),
+                })
+            }
+        },
+        _ => Err(Error::PermissionDenied {
+            msg: String::from("Invalid entity type provided"),
+        })
+    }
+}

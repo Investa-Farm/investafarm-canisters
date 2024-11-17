@@ -307,6 +307,7 @@ service : {
   is_allowed_principal : () -> (bool) query;
   is_spender_approved : (principal, principal) -> (bool) query;
   log_in : () -> (Result) query;
+  manual_verify_entity : (text, nat64, bool) -> (Result_19);
   mark_file_complete : (nat64) -> (Result);
   publish_unpublish : (nat64, bool) -> (Result);
   register_farms_agribusiness : (NewFarmsAgriBusiness) -> (Result);
