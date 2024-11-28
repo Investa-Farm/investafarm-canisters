@@ -39,10 +39,10 @@ mod approved_principals;
 
 use ic_cdk::storage;
 
-#[update] 
-fn test_function(name: String) -> String {
-    format!("Testing update functionality...Hello, {}!", name)
-}
+// #[update] 
+// fn test_function(name: String) -> String {
+//     format!("Testing update functionality...Hello, {}!", name)
+// }
 
 // REGISTER FARMS
 #[update]
@@ -117,6 +117,17 @@ fn pre_upgrade() {
         .map(|(k, v)| (k.clone(), v.clone()))
         .collect()
     );
+    let agribiz_files: Vec<_> = farmsagribizmanagement::AGRIBIZ_FILE_STORAGE.with(|storage| 
+        storage.borrow().iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
+    );
+    
+    let file_infos: Vec<_> = farmsagribizmanagement::FILE_INFO_STORAGE.with(|storage|
+        storage.borrow().iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
+    );
 
     storage::stable_save((
         investor_investments,
@@ -127,7 +138,9 @@ fn pre_upgrade() {
         supply_agribusinesses,
         farms_agribusinesses,
         orders,
-        files
+        files, 
+        agribiz_files,
+        file_infos,
     )).expect("Failed to save stable state");
 }
 
@@ -144,6 +157,8 @@ fn post_upgrade() {
         Vec<entitymanagement::FarmsAgriBusiness>,
         Vec<entitymanagement::Order>,
         Vec<(entitymanagement::BoundedString, entitymanagement::BoundedBytes)>,
+        Vec<(entitymanagement::BoundedString, entitymanagement::BoundedBytes)>,
+        Vec<(u64, farmsagribizmanagement::FileInfo)>,
     )>() {
         Ok((
             investor_investments,
@@ -155,6 +170,8 @@ fn post_upgrade() {
             farms_agribusinesses,
             orders,
             files,
+            agribiz_files,
+            file_infos,
         )) => {
             payments::INVESTOR_INVESTMENTS.with(|investor_investments_cell| {
                 *investor_investments_cell.borrow_mut() = investor_investments;
@@ -231,6 +248,20 @@ fn post_upgrade() {
                 }
                 for (filename, data) in files {
                     storage.insert(filename, data);
+                }
+            });
+
+            farmsagribizmanagement::AGRIBIZ_FILE_STORAGE.with(|storage| {
+                let mut storage = storage.borrow_mut();
+                for (filename, data) in agribiz_files {
+                    storage.insert(filename, data);
+                }
+            });
+    
+            farmsagribizmanagement::FILE_INFO_STORAGE.with(|storage| {
+                let mut storage = storage.borrow_mut();
+                for (id, info) in file_infos {
+                    storage.insert(id, info);
                 }
             });
         }

@@ -80,12 +80,12 @@ impl BoundedStorable for FileInfo {
 thread_local! {
     static NEXT_FILE_ID: RefCell<u64> = RefCell::new(1);
     
-    static AGRIBIZ_FILE_STORAGE: RefCell<StableBTreeMap<BoundedString, BoundedBytes, Memory>> =
+    pub static AGRIBIZ_FILE_STORAGE: RefCell<StableBTreeMap<BoundedString, BoundedBytes, Memory>> =
         RefCell::new(StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(9)))
         ));
 
-    static FILE_INFO_STORAGE: RefCell<StableBTreeMap<u64, FileInfo, Memory>> =
+    pub static FILE_INFO_STORAGE: RefCell<StableBTreeMap<u64, FileInfo, Memory>> =
         RefCell::new(StableBTreeMap::init(
             MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(10)))
         ));
