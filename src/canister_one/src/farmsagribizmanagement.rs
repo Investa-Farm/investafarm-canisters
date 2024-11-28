@@ -262,13 +262,6 @@ pub fn register_single_farm(new_farmer: NewFarmer, file_id: u64) -> Result<Succe
                         kyc_job_id: None
                     };
 
-                    // Store the new farmer
-                    entitymanagement::REGISTERED_FARMERS.with(|farmers| {
-                        farmers
-                            .borrow_mut()
-                            .insert(farmer.farm_name.clone(), farmer.clone())
-                    });
-
                     entitymanagement::FARMER_STORAGE
                         .with(|farmers| farmers.borrow_mut().insert(id, farmer.clone()));
 
@@ -354,17 +347,6 @@ pub fn change_verification_status(farm_id: u64, new_status: bool) -> Result<Succ
                         .borrow_mut()
                         .insert(farm_id, updated_farmer)
                         .is_some();
-
-                    // Also update in REGISTERED_FARMERS
-                    entitymanagement::REGISTERED_FARMERS.with(|farmers| {
-                        if let Some(registered_farmer) = farmers.borrow().get(&farm_name) {
-                            let mut updated_registered_farmer = registered_farmer.clone();
-                            updated_registered_farmer.verified = new_status;
-                            farmers
-                                .borrow_mut()
-                                .insert(farm_name.clone(), updated_registered_farmer);
-                        }
-                    });
                 }
             });
 

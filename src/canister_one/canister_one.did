@@ -319,6 +319,7 @@ service : {
   store_investment : (nat64, float64, nat64, text) -> (Result_1);
   store_investments : (nat64, float64, nat64, text, text) -> (Result_1);
   store_transaction_fee : (text, float64) -> (Result_1);
+  test_function : (text) -> (text);
   update_farmer_farm_details : (nat64, text, text) -> (Result_1);
   update_farms_agribusiness_name : (nat64, text) -> (Result_1);
   update_investor_name : (nat64, text) -> (Result_1);

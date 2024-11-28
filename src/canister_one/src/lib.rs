@@ -39,6 +39,11 @@ mod approved_principals;
 
 use ic_cdk::storage;
 
+#[update] 
+fn test_function(name: String) -> String {
+    format!("Testing update functionality...Hello, {}!", name)
+}
+
 // REGISTER FARMS
 #[update]
 fn register_your_farm(
