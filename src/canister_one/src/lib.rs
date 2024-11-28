@@ -129,6 +129,18 @@ fn pre_upgrade() {
         .collect()
     );
 
+    let farm_reports: Vec<_> = farmerfiles::FARM_REPORTS.with(|reports| 
+        reports.borrow().iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
+    );
+
+    let farm_images: Vec<_> = farmsagribizmanagement::FARM_IMAGES.with(|images| 
+        images.borrow().iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
+    );    
+
     storage::stable_save((
         investor_investments,
         farm_investments,
@@ -141,6 +153,8 @@ fn pre_upgrade() {
         files, 
         agribiz_files,
         file_infos,
+        farm_reports,
+        farm_images,
     )).expect("Failed to save stable state");
 }
 
@@ -159,6 +173,8 @@ fn post_upgrade() {
         Vec<(entitymanagement::BoundedString, entitymanagement::BoundedBytes)>,
         Vec<(entitymanagement::BoundedString, entitymanagement::BoundedBytes)>,
         Vec<(u64, farmsagribizmanagement::FileInfo)>,
+        Option<Vec<(u64, farmerfiles::FarmerReportVec)>>,
+        Option<Vec<(u64, farmsagribizmanagement::ImagesBoundedBytes)>>,
     )>() {
         Ok((
             investor_investments,
@@ -172,6 +188,8 @@ fn post_upgrade() {
             files,
             agribiz_files,
             file_infos,
+            farm_reports,
+            farm_images,
         )) => {
             payments::INVESTOR_INVESTMENTS.with(|investor_investments_cell| {
                 *investor_investments_cell.borrow_mut() = investor_investments;
@@ -264,10 +282,27 @@ fn post_upgrade() {
                     storage.insert(id, info);
                 }
             });
+
+            if let Some(reports) = farm_reports {
+                farmerfiles::FARM_REPORTS.with(|storage| {
+                    let mut storage = storage.borrow_mut();
+                    for (id, report_vec) in reports {
+                        storage.insert(id, report_vec);
+                    }
+                });
+            }
+
+            if let Some(images) = farm_images {
+                farmsagribizmanagement::FARM_IMAGES.with(|storage| {
+                    let mut storage = storage.borrow_mut();
+                    for (id, image_vec) in images {
+                        storage.insert(id, image_vec);
+                    }
+                });
+            }
         }
         Err(e) => {
             ic_cdk::println!("Failed to restore stable state: {:?}", e);
-            // Optionally, you can reset the state here if needed
         }
     }
 }

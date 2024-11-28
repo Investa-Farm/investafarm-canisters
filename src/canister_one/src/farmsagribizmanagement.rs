@@ -6,8 +6,8 @@ use serde::{Deserialize, Serialize};
 use std::cell::RefCell;
 use std::collections::HashMap;
 use std::borrow::Cow;
-use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory};
-use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap };
+use ic_stable_structures::memory_manager::MemoryId;
+use ic_stable_structures::{BoundedStorable, StableBTreeMap};
 
 // pub type Memory = VirtualMemory<DefaultMemoryImpl>;
 
@@ -44,8 +44,8 @@ pub struct NewFarmer {
     pub farm_description: String,
 }
 
-#[derive(Clone, Debug)]
-pub struct BoundedBytesVec(pub Vec<BoundedBytes>);
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct ImagesBoundedBytes(pub Vec<Vec<u8>>);
 
 impl Storable for FileInfo {
     fn to_bytes(&self) -> Cow<[u8]> {
@@ -62,20 +62,20 @@ impl BoundedStorable for FileInfo {
     const IS_FIXED_SIZE: bool = false;
 }
 
-// impl Storable for BoundedBytesVec {
-//     fn to_bytes(&self) -> Cow<[u8]> {
-//         Cow::Owned(Encode!(self.0.iter().map(|b| b.as_ref()).collect::<Vec<_>>()).unwrap())
-//     }   
+impl Storable for ImagesBoundedBytes {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        std::borrow::Cow::Owned(self.0.iter().flat_map(|v| v.clone()).collect())
+    }
 
-//     fn from_bytes(bytes: Cow<[u8]>) -> Self {
-//         BoundedBytesVec(Decode!(bytes.as_ref(), Vec<u8>).unwrap().into_iter().map(|b| BoundedBytes::from(b)).collect())
-//     }
-// }
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        ImagesBoundedBytes(vec![bytes.to_vec()])
+    }
+}
 
-// impl BoundedStorable for BoundedBytesVec {
-//     const MAX_SIZE: u32 = 1024 * 1024; // Adjust size as needed
-//     const IS_FIXED_SIZE: bool = false;
-// }
+impl BoundedStorable for ImagesBoundedBytes {
+    const MAX_SIZE: u32 = 512_000; 
+    const IS_FIXED_SIZE: bool = false;
+}
 
 thread_local! {
     static NEXT_FILE_ID: RefCell<u64> = RefCell::new(1);
@@ -90,10 +90,10 @@ thread_local! {
             MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(10)))
         ));
 
-    // static FARM_IMAGES: RefCell<StableBTreeMap<u64, Vec<BoundedBytes>, Memory>> =
-    //     RefCell::new(StableBTreeMap::init(
-    //         MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(11)))
-    //     ));
+    pub static FARM_IMAGES: RefCell<StableBTreeMap<u64, ImagesBoundedBytes, Memory>> =
+        RefCell::new(StableBTreeMap::init(
+            MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(11)))
+        ));
 }
 
 #[update]
@@ -423,48 +423,56 @@ pub fn change_verification_status(farm_id: u64, new_status: bool) -> Result<Succ
     }
 }
 
-// #[update]
-// fn add_farm_images(farm_id: u64, images: Vec<Vec<u8>>) -> Result<entitymanagement::Success, entitymanagement::Error> {
-//     let caller = ic_cdk::caller();
+#[update]
+fn add_farm_images(farm_id: u64, images: Vec<Vec<u8>>) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    let caller = ic_cdk::caller();
 
-//     // First verify the farm exists and belongs to the caller
-//     let farm = entitymanagement::FARMER_STORAGE
-//         .with(|storage| storage.borrow().get(&farm_id).clone())
-//         .ok_or_else(|| entitymanagement::Error::NotAuthorized {
-//             msg: format!("Farm with ID {} not found", farm_id),
-//         })?;
+    // First verify the farm exists and belongs to the caller
+    let farm = entitymanagement::FARMER_STORAGE
+        .with(|storage| storage.borrow().get(&farm_id).clone())
+        .ok_or_else(|| entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm with ID {} not found", farm_id),
+        })?;
 
-//     if farm.principal_id != caller {
-//         return Err(entitymanagement::Error::NotAuthorized {
-//             msg: "You are not authorized to modify this farm.".to_string(),
-//         });
-//     }
+    if farm.principal_id != caller {
+        return Err(entitymanagement::Error::NotAuthorized {
+            msg: "You are not authorized to modify this farm.".to_string(),
+        });
+    }
 
-//     // Merge existing images with new ones
-//     FARM_IMAGES.with(|images_storage| {
-//         let mut storage = images_storage.borrow_mut();
-//         let existing_images = storage.entry(farm_id).or_insert(Vec::new());
-//         existing_images.extend(images.clone());
-//     });
-
-//     // Generate image references for all images
-//     let image_refs: Vec<String> = FARM_IMAGES.with(|images_storage| {
-//         let storage = images_storage.borrow();
-//         let total_images = storage.get(&farm_id).map(|imgs| imgs.len()).unwrap_or(0);
-//         (0..total_images).map(|index| format!("image_{}", index)).collect()
-//     });
-
-//     // Update farm with all image references
-//     let mut updated_farm = farm;
-//     updated_farm.images = Some(image_refs);
+    // Merge existing images with new ones
+    FARM_IMAGES.with(|images_storage| {
+        let mut storage = images_storage.borrow_mut();
     
-//     entitymanagement::FARMER_STORAGE
-//         .with(|storage| storage.borrow_mut().insert(farm_id, updated_farm.clone()));
+        // Check if there are existing images for the farm_id
+        if let Some(existing_images) = storage.get(&farm_id) {
+            let mut new_images = existing_images.clone();
+            new_images.0.extend(images.clone()); // Merge new images
+            storage.insert(farm_id, new_images);
+        } else {
+            // No existing images, create a new entry
+            storage.insert(farm_id, ImagesBoundedBytes(images));
+        }
+    });
 
-//     Ok(entitymanagement::Success::PartialDataStored {
-//         msg: "Images added successfully".to_string(),
-//     })
-// }
+    // Generate image references for all images
+    let image_refs: Vec<String> = FARM_IMAGES.with(|images_storage| {
+        let storage = images_storage.borrow();
+        let total_images = storage.get(&farm_id).map(|imgs| imgs.0.len()).unwrap_or(0);
+        (0..total_images).map(|index| format!("image_{}", index)).collect()
+    });
+
+    // Update farm with all image references
+    let mut updated_farm = farm;
+    updated_farm.images = Some(image_refs);
+    
+    entitymanagement::FARMER_STORAGE
+        .with(|storage| storage.borrow_mut().insert(farm_id, updated_farm.clone()));
+
+    Ok(entitymanagement::Success::PartialDataStored {
+        msg: "Images added successfully".to_string(),
+    })
+}
 
 
 #[update]
@@ -622,31 +630,37 @@ fn delete_farm(farm_id: u64) -> Result<entitymanagement::Success, entitymanageme
 }
 
 
-// #[query]
-// fn get_farm_images(farm_id: u64) -> Result<Vec<Vec<u8>>, entitymanagement::Error> {
-//     let _caller = ic_cdk::caller();
+#[query]
+fn get_farm_images(farm_id: u64) -> Result<Vec<Vec<u8>>, entitymanagement::Error> {
+    let _caller = ic_cdk::caller();
 
-//     // First verify the farm exists
-//     let _farm = entitymanagement::FARMER_STORAGE
-//         .with(|storage| storage.borrow().get(&farm_id).clone())
-//         .ok_or_else(|| entitymanagement::Error::NotAuthorized {
-//             msg: format!("Farm with ID {} not found", farm_id),
-//         })?;
+    // Verify the farm exists
+    let _farm = entitymanagement::FARMER_STORAGE
+        .with(|storage| storage.borrow().get(&farm_id)) 
+        .ok_or_else(|| entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm with ID {} not found", farm_id),
+        })?;
 
-//     // Get images from storage
-//     let images = FARM_IMAGES.with(|images_storage| {
-//         images_storage
-//             .borrow()
-//             .get(&farm_id)
-//             .cloned()
-//             .unwrap_or_default()
-//     });
+    // Get images from storage
+    let images = FARM_IMAGES.with(|images_storage| {
+        images_storage
+            .borrow()
+            .get(&farm_id)
+            .map(|images| images.clone()) // Clone the `ImagesBoundedBytes` value inside the `Option`
+    });
 
-//     if images.is_empty() {
-//         return Err(entitymanagement::Error::ErrorOccured {
-//             msg: format!("No images found for farm {}", farm_id)
-//         });
-//     }
+    if let Some(images) = images {
+        if images.0.is_empty() {
+            return Err(entitymanagement::Error::ErrorOccured {
+                msg: format!("No images found for farm {}", farm_id),
+            });
+        }
+        return Ok(images.0);
+    }
 
-//     Ok(images)
-// }
+    Err(entitymanagement::Error::ErrorOccured {
+        msg: format!("No images found for farm {}", farm_id),
+    })
+}
+
+
