@@ -5,7 +5,6 @@ use serde::{Deserialize, Serialize}; //serializing and deserializing Rust data s
                                      // use std::cell::Ref;
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory}; //stable memory management
 use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap }; //defining and working with stable data structures
-use std::collections::HashMap;
 use std::{borrow::Cow, cell::RefCell}; //interior mutability with runtime borrow checking
                                        // use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -121,17 +120,34 @@ pub struct TokenCollateral {
     pub amount: u64,
 }
 
+// Bounded Types implementation
+
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub struct BoundedString(pub String);
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BoundedBytes(pub Vec<u8>);
+
 impl BoundedString {
     pub fn new(value: String) -> Result<Self, &'static str> {
-        const MAX_LENGTH: usize = 64;
+        const MAX_LENGTH: usize = 512_000;
 
         if value.len() <= MAX_LENGTH {
             Ok(BoundedString(value))
         } else {
             Err("String exceeds maximum length for BoundedString")
+        }
+    }
+}
+
+impl BoundedBytes {
+    pub fn new(value: Vec<u8>) -> Result<Self, &'static str> {
+        const MAX_LENGTH: usize = 512_000;
+
+        if value.len() <= MAX_LENGTH {
+            Ok(BoundedBytes(value))
+        } else {
+            Err("Bytes exceed maximum length for BoundedBytes")
         }
     }
 }
@@ -507,6 +523,17 @@ impl Storable for BoundedString {
     }
 }
 
+
+impl Storable for BoundedBytes {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        std::borrow::Cow::Owned(self.0.clone())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        BoundedBytes(bytes.to_vec())
+    }
+}
+
 impl Storable for Investor {
     fn to_bytes(&self) -> Cow<[u8]> {
         Cow::Owned(Encode!(self).unwrap())
@@ -599,6 +626,11 @@ impl BoundedStorable for Order {
 
 impl BoundedStorable for BoundedString {
     const MAX_SIZE: u32 = 1024; 
+    const IS_FIXED_SIZE: bool = false;
+}
+
+impl BoundedStorable for BoundedBytes {
+    const MAX_SIZE: u32 = 512_000; // Match with MAX_LENGTH above
     const IS_FIXED_SIZE: bool = false;
 }
 
@@ -700,8 +732,11 @@ thread_local! {
     //Stores the current Farms Agribusiness ID.
     static FARMS_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(3);
 
-    // Implementing file storage
-    pub static FILE_STORAGE: RefCell<HashMap<String, Vec<u8>>> = RefCell::new(HashMap::new());
+   // Storing files
+   pub static FILE_STORAGE: RefCell<StableBTreeMap<BoundedString, BoundedBytes, Memory>> =
+    RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(8)))
+    ));
 
 }
 
@@ -1578,9 +1613,14 @@ pub fn display_specific_farm_agribusiness(
 
 #[update]
 fn upload_file(filename: String, file_data: Vec<u8>) -> Result<Success, Error> {
+    let bounded_filename = BoundedString::new(filename.clone())
+        .map_err(|e| Error::Error { msg: e.to_string() })?;
+    let bounded_data = BoundedBytes::new(file_data)
+        .map_err(|e| Error::Error { msg: e.to_string() })?;
+
     FILE_STORAGE.with(|storage| {
         let mut storage = storage.borrow_mut();
-        storage.insert(filename.clone(), file_data);
+        storage.insert(bounded_filename, bounded_data);
         Ok(Success::ReportUploadedSuccesfully {
             msg: format!("File {} uploaded successfully", filename),
         })
@@ -1588,24 +1628,27 @@ fn upload_file(filename: String, file_data: Vec<u8>) -> Result<Success, Error> {
 }
 
 #[query]
-
 fn get_file(filename: String) -> Result<Vec<u8>, Error> {
+    let bounded_filename = BoundedString::new(filename.clone())
+        .map_err(|e| Error::Error { msg: e.to_string() })?;
+
     FILE_STORAGE.with(|storage| {
         let storage = storage.borrow();
-        storage.get(&filename).cloned().ok_or(Error::FileNotFound {
-            msg: format!("File {} not found", filename),
-        })
+        storage.get(&bounded_filename)
+            .map(|bounded_bytes| bounded_bytes.0)
+            .ok_or(Error::FileNotFound {
+                msg: format!("File {} not found", filename),
+            })
     })
 }
 
 #[query]
-
 fn get_all_files() -> Result<Vec<(String, Vec<u8>)>, Error> {
     FILE_STORAGE.with(|storage| {
         let storage = storage.borrow();
         Ok(storage
             .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
+            .map(|(k, v)| (k.0.clone(), v.0.clone()))
             .collect())
     })
 }
@@ -1616,8 +1659,8 @@ fn get_files_by_type(farmer_id: u64, report_type: String) -> Result<Vec<(String,
         let storage = storage.borrow();
         Ok(storage
             .iter()
-            .filter(|(k, _)| k.starts_with(&format!("{}_{}", report_type, farmer_id)))
-            .map(|(k, v)| (k.clone(), v.clone()))
+            .filter(|(k, _)| k.0.starts_with(&format!("{}_{}", report_type, farmer_id)))
+            .map(|(k, v)| (k.0.clone(), v.0.clone()))
             .collect())
     })
 }
