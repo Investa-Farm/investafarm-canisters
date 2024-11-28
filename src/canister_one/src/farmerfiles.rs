@@ -36,7 +36,8 @@ pub struct FarmerReport {
     farm: Vec<FarmReport>,
 }
 
-struct FarmerReportVec(Vec<FarmerReport>);
+#[derive(CandidType, Serialize, Deserialize, Clone)]
+pub struct FarmerReportVec(pub Vec<FarmerReport>);
 
 impl Storable for FarmerReportVec {
     fn to_bytes(&self) -> Cow<[u8]> {

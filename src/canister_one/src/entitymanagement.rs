@@ -4,8 +4,7 @@ use ic_stable_structures::Storable;
 use serde::{Deserialize, Serialize}; //serializing and deserializing Rust data structure
                                      // use std::cell::Ref;
 use ic_stable_structures::memory_manager::{MemoryId, MemoryManager, VirtualMemory}; //stable memory management
-use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap}; //defining and working with stable data structures
-use std::collections::HashMap;
+use ic_stable_structures::{BoundedStorable, DefaultMemoryImpl, StableBTreeMap }; //defining and working with stable data structures
 use std::{borrow::Cow, cell::RefCell}; //interior mutability with runtime borrow checking
                                        // use std::collections::BTreeMap;
 use std::sync::atomic::{AtomicU64, Ordering};
@@ -36,33 +35,32 @@ static COUNTER: AtomicU64 = AtomicU64::new(0);
 */
 #[derive(CandidType, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub struct Farmer {
-    pub id: u64,                 //Unique identifier for the farmer.
-    pub principal_id: Principal, //Principal ID of the farmer.
-    pub farmer_name: String,     //Name of the farmer.
-    pub farm_name: String,       //Name of the farm.
+    pub id: u64,
+    pub principal_id: Principal,
+    pub farmer_name: String,
+    pub farm_name: String,
     pub farm_description: String,
-    pub token_collateral: Option<TokenCollateral>, //Description of the farm.
-    pub farm_assets: Option<Vec<(String, (u64, u64))>>, // Maps supply item names to their quantities
-    pub tags: Option<Vec<String>>,                      // Tags for the farm.
-    pub amount_invested: Option<u64>,                   // Amount Invested into the farm.
-    pub investors_ids: Principal,                       //Principle IDs of Investors.
-    pub verified: bool,                                 //verification status.
-    pub agri_business: String,                          //Type of Afribusiness.
-    pub insured: Option<bool>,                          //Insurance Status.
-    pub publish: bool,                                  //Publication Status.
-    pub ifarm_tokens: Option<u64>,                      //iFarm Tokens held.
-    pub credit_score: Option<u64>,                      //Credit Score.
-    pub current_loan_ask: Option<u64>,                  //Loan Amount.
-    pub loaned: bool,                                   //Loan Status.
-    pub loan_maturity: Option<Duration>,                //Time to loan maurity.
-    pub funding_round_start_time: Option<u64>,          // Time loan starts
-    pub time_for_funding_round_to_expire: Option<Duration>, // Time loan expires
-    pub loan_start_time: Option<u64>,                   // Time loan starts
-    pub images: Option<Vec<String>>, // Optional list of image filenames related to the farm
-    // pub reports: Option<Reports>,
-    pub financial_reports: Option<Vec<FinancialReport>>, // Optional financial reports containing financial and farm-related information
-    pub farm_reports: Option<Vec<FarmReport>>, // Optional farm reports containing financial and farm-related information
-    pub kyc_job_id: Option<String>, // For storing the KYC job ID
+    pub token_collateral: Option<TokenCollateral>,
+    pub farm_assets: Option<Vec<(String, (u64, u64))>>,
+    pub tags: Option<Vec<String>>,
+    pub amount_invested: Option<u64>,
+    pub investors_ids: Principal,
+    pub verified: bool,
+    pub agri_business: String,
+    pub insured: Option<bool>,
+    pub publish: bool,
+    pub ifarm_tokens: Option<u64>,
+    pub credit_score: Option<u64>,
+    pub current_loan_ask: Option<u64>,
+    pub loaned: bool,
+    pub loan_maturity: Option<Duration>,
+    pub funding_round_start_time: Option<u64>,
+    pub time_for_funding_round_to_expire: Option<Duration>,
+    pub loan_start_time: Option<u64>,
+    pub images: Option<Vec<String>>,
+    pub financial_reports: Option<Vec<FinancialReport>>,
+    pub farm_reports: Option<Vec<FarmReport>>,
+    pub kyc_job_id: Option<String>,
 }
 
 /**
@@ -120,6 +118,46 @@ pub struct Section {
 pub struct TokenCollateral {
     pub currency: String,
     pub amount: u64,
+}
+
+// Bounded Types implementation
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BoundedString(pub String);
+
+#[derive(CandidType, Serialize, Deserialize, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
+pub struct BoundedBytes(pub Vec<u8>);
+
+impl BoundedString {
+    pub fn new(value: String) -> Result<Self, &'static str> {
+        const MAX_LENGTH: usize = 512_000;
+
+        if value.len() <= MAX_LENGTH {
+            Ok(BoundedString(value))
+        } else {
+            Err("String exceeds maximum length for BoundedString")
+        }
+    }
+}
+
+impl BoundedBytes {
+    pub fn new(value: Vec<u8>) -> Result<Self, &'static str> {
+        const MAX_LENGTH: usize = 512_000;
+
+        if value.len() <= MAX_LENGTH {
+            Ok(BoundedBytes(value))
+        } else {
+            Err("Bytes exceed maximum length for BoundedBytes")
+        }
+    }
+}
+
+impl TryFrom<String> for BoundedString {
+    type Error = &'static str;
+
+    fn try_from(value: String) -> Result<Self, Self::Error> {
+        BoundedString::new(value)
+    }
 }
 
 /**
@@ -475,6 +513,27 @@ impl Storable for Farmer {
     }
 }
 
+impl Storable for BoundedString {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        std::borrow::Cow::Owned(self.0.as_bytes().to_vec())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        BoundedString(String::from_utf8(bytes.to_vec()).unwrap())
+    }
+}
+
+
+impl Storable for BoundedBytes {
+    fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
+        std::borrow::Cow::Owned(self.0.clone())
+    }
+
+    fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
+        BoundedBytes(bytes.to_vec())
+    }
+}
+
 impl Storable for Investor {
     fn to_bytes(&self) -> Cow<[u8]> {
         Cow::Owned(Encode!(self).unwrap())
@@ -563,6 +622,16 @@ impl BoundedStorable for FarmsAgriBusiness {
 impl BoundedStorable for Order {
     const MAX_SIZE: u32 = 1024; // State of whether the size of an Order Struct is fixed.
     const IS_FIXED_SIZE: bool = false; //maximum size (in bytes) that an Order instance can occupy.
+}
+
+impl BoundedStorable for BoundedString {
+    const MAX_SIZE: u32 = 1024; 
+    const IS_FIXED_SIZE: bool = false;
+}
+
+impl BoundedStorable for BoundedBytes {
+    const MAX_SIZE: u32 = 512_000; // Match with MAX_LENGTH above
+    const IS_FIXED_SIZE: bool = false;
 }
 
 // Thread Local will allow us to achieve interior mutability, a design pattern in Rust that allows you to mutate data even when there are immutable references to that data
@@ -663,20 +732,11 @@ thread_local! {
     //Stores the current Farms Agribusiness ID.
     static FARMS_AGRIBUSINESS_ID: RefCell<u64> = RefCell::new(3);
 
-    // Mapping farmers with their farm names: for ensuring there are no duplicate farm names
-    pub static REGISTERED_FARMERS: RefCell<HashMap<String, Farmer>> = RefCell::new(HashMap::new());
-
-    // Mapping Investors with their investor names
-    static REGISTERED_INVESTORS: RefCell<HashMap<String, Investor>> = RefCell::new(HashMap::new());
-
-    // Mapping supply agri business with their names
-    pub static REGISTERED_SUPPLY_AGRIBUSINESS: RefCell<HashMap<String, SupplyAgriBusiness>> = RefCell::new(HashMap::new());
-
-    // Mapping farmer agri business with their names
-    pub static REGISTERED_FARMS_AGRIBUSINESS: RefCell<HashMap<String, FarmsAgriBusiness>> = RefCell::new(HashMap::new());
-
-    // Implementing file storage
-    pub static FILE_STORAGE: RefCell<HashMap<String, Vec<u8>>> = RefCell::new(HashMap::new());
+   // Storing files
+   pub static FILE_STORAGE: RefCell<StableBTreeMap<BoundedString, BoundedBytes, Memory>> =
+    RefCell::new(StableBTreeMap::init(
+        MEMORY_MANAGER.with(|m| m.borrow().get(MemoryId::new(8)))
+    ));
 
 }
 
@@ -830,12 +890,6 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         kyc_job_id: None
     };
 
-    // Mapping farmer name
-    REGISTERED_FARMERS.with(|farmers| {
-        farmers
-            .borrow_mut()
-            .insert(farmer.farm_name.clone(), farmer.clone())
-    });
 
     FARMER_STORAGE.with(|farmers| farmers.borrow_mut().insert(id, farmer));
 
@@ -943,18 +997,18 @@ pub fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Er
     let mut is_principal_id_registered = false;
 
     // Check if the principal ID is already registered in farmers
-    REGISTERED_FARMERS.with(|farmers| {
-        for farmer in farmers.borrow().values() {
+    FARMER_STORAGE.with(|farmers| {
+        for (_, farmer) in farmers.borrow().iter() {
             if farmer.principal_id == new_principal_id {
                 is_principal_id_registered = true;
                 break;
             }
         }
-    });
+    });    
 
     // Check if the principal ID is already registered in investors
-    REGISTERED_INVESTORS.with(|investors| {
-        for investor in investors.borrow().values() {
+    INVESTOR_STORAGE.with(|investors| {
+        for (_, investor)  in investors.borrow().iter() {
             if investor.principal_id == new_principal_id {
                 is_principal_id_registered = true;
                 break;
@@ -963,8 +1017,8 @@ pub fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Er
     });
 
     // Check if the principal ID is already registered in supply agribusiness
-    REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
-        for agribiz in agribusiness.borrow().values() {
+    FARMS_AGRIBUSINESS_STORAGE.with(|agribusiness| {
+        for (_, agribiz)  in agribusiness.borrow().iter() {
             if agribiz.principal_id == new_principal_id {
                 is_principal_id_registered = true;
                 break;
@@ -973,8 +1027,8 @@ pub fn _is_principal_id_registered(new_principal_id: Principal) -> Result<(), Er
     });
 
     // Check if the principal ID is already registered in farms agribusiness
-    REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
-        for agribiz in agribusiness.borrow().values() {
+    SUPPLY_AGRIBUSINESS_STORAGE.with(|agribusiness| {
+        for (_, agribiz)  in agribusiness.borrow().iter() {
             if agribiz.principal_id == new_principal_id {
                 is_principal_id_registered = true;
                 break;
@@ -1027,17 +1081,10 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
         kyc_job_id: None
     };
 
-    let investor_clone1 = investor.clone();
     let investor_clone2 = investor.clone();
 
-    // Mapping investor name
-    REGISTERED_INVESTORS.with(|investors| {
-        investors
-            .borrow_mut()
-            .insert(investor.name, investor_clone1)
-    });
-
     INVESTOR_STORAGE.with(|investors| investors.borrow_mut().insert(id, investor_clone2));
+
 
     Ok(Success::InvestorRegisteredSuccesfully {
         msg: format!("Investor has been registered succesfully"),
@@ -1082,16 +1129,7 @@ pub fn register_supply_agribusiness(
         kyc_job_id: None
     };
 
-    let supply_agri_business_clone1 = supply_agri_business.clone();
     let supply_agri_business_clone2 = supply_agri_business.clone();
-
-    // Mapping the agri business name
-    REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
-        agribusiness.borrow_mut().insert(
-            supply_agri_business.agribusiness_name,
-            supply_agri_business_clone1,
-        )
-    });
 
     SUPPLY_AGRIBUSINESS_STORAGE.with(|supplyagribusiness| {
         supplyagribusiness
@@ -1141,16 +1179,7 @@ pub fn register_farms_agribusiness(
         // farms: new_farms_agribusiness.farms
     };
 
-    let farms_agri_business_clone1 = farms_agri_business.clone();
     let farms_agri_business_clone2 = farms_agri_business.clone();
-
-    //Mapping the agri business name
-    REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
-        agribusiness.borrow_mut().insert(
-            farms_agri_business.agribusiness_name,
-            farms_agri_business_clone1,
-        )
-    });
 
     FARMS_AGRIBUSINESS_STORAGE.with(|supplyagribusiness| {
         supplyagribusiness
@@ -1344,11 +1373,11 @@ pub fn update_farms_agribusiness_name(
 pub fn log_in() -> Result<Success, Error> {
     let principal_id = ic_cdk::caller();
 
-    let result = REGISTERED_FARMERS.with(|farmers| {
-        for farmer in farmers.borrow().values() {
+    let result = FARMER_STORAGE.with(|farmers| {
+        for (_, farmer) in farmers.borrow().iter() {
             if farmer.principal_id == principal_id {
                 return Ok(Success::FarmerLogInSuccesfull {
-                    msg: format!("You've logged in as a farmer succesfully"),
+                    msg: format!("You've logged in as a farmer successfully"),
                 });
             }
         }
@@ -1361,8 +1390,8 @@ pub fn log_in() -> Result<Success, Error> {
         return Ok(res);
     }
 
-    let result = REGISTERED_INVESTORS.with(|investors| {
-        for investor in investors.borrow().values() {
+    let result = INVESTOR_STORAGE.with(|investors| {
+        for investor in investors.borrow().iter().map(|(_, v)| v) {
             if investor.principal_id == principal_id {
                 return Ok(Success::InvestorLogInSuccesfull {
                     msg: format!("You've logged in as an Investor succesfully"),
@@ -1378,8 +1407,8 @@ pub fn log_in() -> Result<Success, Error> {
         return Ok(res);
     }
 
-    let result = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
-        for agribiz in agribusiness.borrow().values() {
+    let result = SUPPLY_AGRIBUSINESS_STORAGE.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().iter().map(|(_, v)| v) {
             if agribiz.principal_id == principal_id {
                 return Ok(Success::SupplyAgriBizRegisteredSuccesfully {
                     msg: format!("You've logged in as an Investor succesfully"),
@@ -1395,8 +1424,8 @@ pub fn log_in() -> Result<Success, Error> {
         return Ok(res);
     }
 
-    let result = REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
-        for agribiz in agribusiness.borrow().values() {
+    let result = FARMS_AGRIBUSINESS_STORAGE.with(|agribusiness| {
+        for agribiz in agribusiness.borrow().iter().map(|(_, v)| v) {
             if agribiz.principal_id == principal_id {
                 return Ok(Success::FarmsAgriBizRegisteredSuccesfully {
                     msg: format!("You've logged in as an Investor succesfully"),
@@ -1416,40 +1445,43 @@ pub fn check_entity_type() -> EntityType {
     let principal_id = ic_cdk::caller();
 
     // Check if the principal ID is registered as a farmer
-    if REGISTERED_FARMERS.with(|farmers| {
+    if FARMER_STORAGE.with(|farmers| {
         farmers
             .borrow()
-            .values()
-            .any(|farmer| farmer.principal_id == principal_id)
+            .iter()
+            .any(|(_, farmer)| farmer.principal_id == principal_id)
     }) {
         return EntityType::Farmer;
-    }
+    }    
 
     // Check if the principal ID is registered as an investor
-    if REGISTERED_INVESTORS.with(|investors| {
+    if INVESTOR_STORAGE.with(|investors| {
         investors
             .borrow()
-            .values()
+            .iter()
+            .map(|(_, v)| v)
             .any(|investor| investor.principal_id == principal_id)
     }) {
         return EntityType::Investor;
-    }
+    }    
 
     // Check if the principal ID is registered as a supply agribusiness
-    if REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+    if SUPPLY_AGRIBUSINESS_STORAGE.with(|agribusiness| {
         agribusiness
             .borrow()
-            .values()
+            .iter()
+            .map(|(_, v)| v)
             .any(|agribiz| agribiz.principal_id == principal_id)
     }) {
         return EntityType::SupplyAgriBusiness;
     }
 
     // Check if the principal ID is registered as a farms agribusiness
-    if REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+    if FARMS_AGRIBUSINESS_STORAGE.with(|agribusiness| {
         agribusiness
             .borrow()
-            .values()
+            .iter()
+            .map(|(_, v)| v)
             .any(|agribiz| agribiz.principal_id == principal_id)
     }) {
         return EntityType::FarmsAgriBusiness;
@@ -1464,45 +1496,46 @@ pub fn get_entity_details() -> EntityDetails {
     let principal_id = ic_cdk::caller();
 
     // Check if the principal ID is registered as a farmer
-    if let Some(farmer) = REGISTERED_FARMERS.with(|farmers| {
+    if let Some(farmer) =  FARMER_STORAGE.with(|farmers| {
         farmers
             .borrow()
-            .values()
-            .find(|farmer| farmer.principal_id == principal_id)
-            .cloned()
+            .iter()
+            .find(|(_, farmer)| farmer.principal_id == principal_id)
+            .map(|(_, farmer)| farmer.clone()) 
     }) {
         return EntityDetails::Farmer(farmer);
     }
+    
 
     // Check if the principal ID is registered as an investor
-    if let Some(investor) = REGISTERED_INVESTORS.with(|investors| {
+    if let Some(investor) = INVESTOR_STORAGE.with(|investors| {
         investors
             .borrow()
-            .values()
-            .find(|investor| investor.principal_id == principal_id)
-            .cloned()
+            .iter()
+            .find(|(_, investor)| investor.principal_id == principal_id)
+            .map(|(_, investor)| investor.clone()) 
     }) {
         return EntityDetails::Investor(investor);
     }
 
     // Check if the principal ID is registered as a supply agribusiness
-    if let Some(agribusiness) = REGISTERED_SUPPLY_AGRIBUSINESS.with(|agribusiness| {
+    if let Some(agribusiness) = SUPPLY_AGRIBUSINESS_STORAGE.with(|agribusiness| {
         agribusiness
             .borrow()
-            .values()
-            .find(|agribiz| agribiz.principal_id == principal_id)
-            .cloned()
+            .iter()
+            .find(|(_, investor)| investor.principal_id == principal_id)
+            .map(|(_, investor)| investor.clone()) 
     }) {
         return EntityDetails::SupplyAgriBusiness(agribusiness);
     }
 
     // Check if the principal ID is registered as a farms agribusiness
-    if let Some(agribusiness) = REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness| {
+    if let Some(agribusiness) = FARMS_AGRIBUSINESS_STORAGE.with(|agribusiness| {
         agribusiness
             .borrow()
-            .values()
-            .find(|agribiz| agribiz.principal_id == principal_id)
-            .cloned()
+            .iter()
+            .find(|(_, agribiz)| agribiz.principal_id == principal_id)
+            .map(|(_, agribiz)| agribiz.clone()) 
     }) {
         return EntityDetails::FarmsAgriBusiness(agribusiness);
     }
@@ -1539,9 +1572,9 @@ pub fn display_specific_farm(farm_id: u64) -> Result<Farmer, Error> {
 */
 #[query]
 pub fn display_specific_investor(principal_id: Principal) -> Result<Investor, Error> {
-    REGISTERED_INVESTORS.with(|investors| {
+    INVESTOR_STORAGE.with(|investors| {
         let investors = investors.borrow();
-        for investor in investors.values() {
+        for (_, investor) in investors.iter() {
             if investor.principal_id == principal_id {
                 return Ok(investor.clone());
             }
@@ -1562,9 +1595,9 @@ pub fn display_specific_investor(principal_id: Principal) -> Result<Investor, Er
 pub fn display_specific_farm_agribusiness(
     principal_id: Principal,
 ) -> Result<FarmsAgriBusiness, Error> {
-    REGISTERED_FARMS_AGRIBUSINESS.with(|agribusiness_storage| {
+    FARMS_AGRIBUSINESS_STORAGE.with(|agribusiness_storage| {
         let agribusinesses = agribusiness_storage.borrow();
-        for agribusiness in agribusinesses.values() {
+        for (_, agribusiness) in agribusinesses.iter() {
             if agribusiness.principal_id == principal_id {
                 return Ok(agribusiness.clone());
             }
@@ -1580,9 +1613,14 @@ pub fn display_specific_farm_agribusiness(
 
 #[update]
 fn upload_file(filename: String, file_data: Vec<u8>) -> Result<Success, Error> {
+    let bounded_filename = BoundedString::new(filename.clone())
+        .map_err(|e| Error::Error { msg: e.to_string() })?;
+    let bounded_data = BoundedBytes::new(file_data)
+        .map_err(|e| Error::Error { msg: e.to_string() })?;
+
     FILE_STORAGE.with(|storage| {
         let mut storage = storage.borrow_mut();
-        storage.insert(filename.clone(), file_data);
+        storage.insert(bounded_filename, bounded_data);
         Ok(Success::ReportUploadedSuccesfully {
             msg: format!("File {} uploaded successfully", filename),
         })
@@ -1590,24 +1628,27 @@ fn upload_file(filename: String, file_data: Vec<u8>) -> Result<Success, Error> {
 }
 
 #[query]
-
 fn get_file(filename: String) -> Result<Vec<u8>, Error> {
+    let bounded_filename = BoundedString::new(filename.clone())
+        .map_err(|e| Error::Error { msg: e.to_string() })?;
+
     FILE_STORAGE.with(|storage| {
         let storage = storage.borrow();
-        storage.get(&filename).cloned().ok_or(Error::FileNotFound {
-            msg: format!("File {} not found", filename),
-        })
+        storage.get(&bounded_filename)
+            .map(|bounded_bytes| bounded_bytes.0)
+            .ok_or(Error::FileNotFound {
+                msg: format!("File {} not found", filename),
+            })
     })
 }
 
 #[query]
-
 fn get_all_files() -> Result<Vec<(String, Vec<u8>)>, Error> {
     FILE_STORAGE.with(|storage| {
         let storage = storage.borrow();
         Ok(storage
             .iter()
-            .map(|(k, v)| (k.clone(), v.clone()))
+            .map(|(k, v)| (k.0.clone(), v.0.clone()))
             .collect())
     })
 }
@@ -1618,8 +1659,8 @@ fn get_files_by_type(farmer_id: u64, report_type: String) -> Result<Vec<(String,
         let storage = storage.borrow();
         Ok(storage
             .iter()
-            .filter(|(k, _)| k.starts_with(&format!("{}_{}", report_type, farmer_id)))
-            .map(|(k, v)| (k.clone(), v.clone()))
+            .filter(|(k, _)| k.0.starts_with(&format!("{}_{}", report_type, farmer_id)))
+            .map(|(k, v)| (k.0.clone(), v.0.clone()))
             .collect())
     })
 }
