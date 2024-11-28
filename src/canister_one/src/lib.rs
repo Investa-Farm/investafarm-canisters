@@ -112,6 +112,11 @@ fn pre_upgrade() {
     let supply_agribusinesses: Vec<_> = entitymanagement::SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| storage.borrow().iter().map(|(_, v)| v.clone()).collect());
     let farms_agribusinesses: Vec<_> = entitymanagement::FARMS_AGRIBUSINESS_STORAGE.with(|storage| storage.borrow().iter().map(|(_, v)| v.clone()).collect());
     let orders: Vec<_> = entitymanagement::ORDER_STORAGE.with(|storage| storage.borrow().iter().map(|(_, v)| v.clone()).collect());
+    let files: Vec<_> = entitymanagement::FILE_STORAGE.with(|storage| 
+        storage.borrow().iter()
+        .map(|(k, v)| (k.clone(), v.clone()))
+        .collect()
+    );
 
     storage::stable_save((
         investor_investments,
@@ -122,6 +127,7 @@ fn pre_upgrade() {
         supply_agribusinesses,
         farms_agribusinesses,
         orders,
+        files
     )).expect("Failed to save stable state");
 }
 
@@ -137,6 +143,7 @@ fn post_upgrade() {
         Vec<entitymanagement::SupplyAgriBusiness>,
         Vec<entitymanagement::FarmsAgriBusiness>,
         Vec<entitymanagement::Order>,
+        Vec<(entitymanagement::BoundedString, entitymanagement::BoundedBytes)>,
     )>() {
         Ok((
             investor_investments,
@@ -147,6 +154,7 @@ fn post_upgrade() {
             supply_agribusinesses,
             farms_agribusinesses,
             orders,
+            files,
         )) => {
             payments::INVESTOR_INVESTMENTS.with(|investor_investments_cell| {
                 *investor_investments_cell.borrow_mut() = investor_investments;
@@ -212,6 +220,17 @@ fn post_upgrade() {
                 }
                 for order in orders {
                     storage.insert(order.order_id, order);
+                }
+            });
+
+            entitymanagement::FILE_STORAGE.with(|storage| {
+                let mut storage = storage.borrow_mut();
+                let keys: Vec<_> = storage.iter().map(|(k, _)| k).collect();
+                for key in keys {
+                    storage.remove(&key);
+                }
+                for (filename, data) in files {
+                    storage.insert(filename, data);
                 }
             });
         }
