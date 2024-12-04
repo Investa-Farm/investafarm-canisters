@@ -61,6 +61,7 @@ pub struct Farmer {
     pub financial_reports: Option<Vec<FinancialReport>>,
     pub farm_reports: Option<Vec<FarmReport>>,
     pub kyc_job_id: Option<String>,
+    pub email: Option<String>,
 }
 
 /**
@@ -222,7 +223,8 @@ impl Default for Farmer {
             // reports: None
             financial_reports: None,
             farm_reports: None,
-            kyc_job_id: None
+            kyc_job_id: None, 
+            email: None,
         }
     }
 }
@@ -255,6 +257,7 @@ pub struct Investor {
     pub principal_id: Principal,           //Investor's principal ID.
     pub saved_farms: Option<Vec<u64>>, // List of saved farm IDs.
     pub kyc_job_id: Option<String>, // For storing the KYC job ID
+    pub email: Option<String> 
 }
 
 /**
@@ -272,7 +275,8 @@ impl Default for Investor {
             verified: false,
             principal_id: Principal::anonymous(),
             saved_farms: None,
-            kyc_job_id: None 
+            kyc_job_id: None, 
+            email: None
         }
     }
 }
@@ -304,6 +308,7 @@ pub struct SupplyAgriBusiness {
     pub verified: bool,          //Indicates if the business is verified.
     pub principal_id: Principal, //ID associated with the business's principal.
     pub kyc_job_id: Option<String>, // For storing the KYC job ID
+    pub email: Option<String>
 }
 
 /**
@@ -323,7 +328,8 @@ impl Default for SupplyAgriBusiness {
             //supplied_items: SuppliedItems,
             verified: false,
             principal_id: Principal::anonymous(),
-            kyc_job_id: None 
+            kyc_job_id: None, 
+            email: None
         }
     }
 }
@@ -446,6 +452,7 @@ pub struct FarmsAgriBusiness {
     pub principal_id: Principal,   //Farms agribusiness principle ID.
     pub verified: bool,
     pub kyc_job_id: Option<String>, // For storing the KYC job ID
+    pub email: Option<String>
     // pub farms: Option<FarmsForAgriBusiness>
 }
 
@@ -464,7 +471,8 @@ impl Default for FarmsAgriBusiness {
             total_farmers: 0,
             verified: false,
             principal_id: Principal::anonymous(),
-            kyc_job_id: None
+            kyc_job_id: None,     
+            email: None,
             //  farms: None
         }
     }
@@ -887,7 +895,8 @@ pub fn register_farm(new_farmer: NewFarmer) -> Result<Success, Error> {
         images: None,
         farm_reports: None,
         financial_reports: None,
-        kyc_job_id: None
+        kyc_job_id: None, 
+        email: None,
     };
 
 
@@ -1078,7 +1087,8 @@ pub fn register_investor(new_investor: NewInvestor) -> Result<Success, Error> {
         name: new_investor.name,
         verified: false,
         saved_farms: None,
-        kyc_job_id: None
+        kyc_job_id: None, 
+        email: None,
     };
 
     let investor_clone2 = investor.clone();
@@ -1126,7 +1136,8 @@ pub fn register_supply_agribusiness(
         //supplied_items: SuppliedItems,
         verified: false,
         principal_id: new_supply_agribusiness_principal_id,
-        kyc_job_id: None
+        kyc_job_id: None, 
+        email: None
     };
 
     let supply_agri_business_clone2 = supply_agri_business.clone();
@@ -1175,7 +1186,8 @@ pub fn register_farms_agribusiness(
         verified: false,
         principal_id: new_farms_agribusiness_principal_id,
         total_farmers: new_farms_agribusiness.total_farmers,
-        kyc_job_id: None
+        kyc_job_id: None, 
+        email: None
         // farms: new_farms_agribusiness.farms
     };
 
@@ -1625,6 +1637,97 @@ fn upload_file(filename: String, file_data: Vec<u8>) -> Result<Success, Error> {
             msg: format!("File {} uploaded successfully", filename),
         })
     })
+}
+
+#[update]
+pub fn update_email(new_email: String) -> Result<Success, Error> {
+    // Ensure the email is not empty
+    if new_email.trim().is_empty() {
+        return Err(Error::FieldEmpty {
+            msg: "Email cannot be empty!".to_string(),
+        });
+    }
+
+    let caller = ic_cdk::caller();
+    let entity_type = check_entity_type();
+
+    match entity_type {
+        EntityType::Farmer => {
+            FARMER_STORAGE.with(|storage| {
+                let mut farmers = storage.borrow_mut();
+                for (_, farmer) in farmers.iter() {
+                    if farmer.principal_id == caller {
+                        let mut farmer = farmer.clone();
+                        farmer.email = Some(new_email.clone());
+                        farmers.insert(farmer.id, farmer);
+                        return Ok(Success::FileUploaded {
+                            msg: "Email updated successfully!".to_string(),
+                        });
+                    }
+                }
+                Err(Error::NotAuthorized {
+                    msg: "Caller is not a registered farmer.".to_string(),
+                })
+            })
+        }
+        EntityType::Investor => {
+            INVESTOR_STORAGE.with(|storage| {
+                let mut investors = storage.borrow_mut();
+                for (_, investor) in investors.iter() {
+                    if investor.principal_id == caller {
+                        let mut investor = investor.clone();
+                        investor.email = Some(new_email.clone());
+                        investors.insert(investor.id, investor);
+                        return Ok(Success::FileUploaded {
+                            msg: "Email updated successfully!".to_string(),
+                        });
+                    }
+                }
+                Err(Error::NotAuthorized {
+                    msg: "Caller is not a registered investor.".to_string(),
+                })
+            })
+        }
+        EntityType::SupplyAgriBusiness => {
+            SUPPLY_AGRIBUSINESS_STORAGE.with(|storage| {
+                let mut agribusinesses = storage.borrow_mut();
+                for (_, agribusiness) in agribusinesses.iter() {
+                    if agribusiness.principal_id == caller {
+                        let mut agribusiness = agribusiness.clone();
+                        agribusiness.email = Some(new_email.clone());
+                        agribusinesses.insert(agribusiness.id, agribusiness);
+                        return Ok(Success::FileUploaded {
+                            msg: "Email updated successfully!".to_string(),
+                        });
+                    }
+                }
+                Err(Error::NotAuthorized {
+                    msg: "Caller is not a registered supply agribusiness.".to_string(),
+                })
+            })
+        }
+        EntityType::FarmsAgriBusiness => {
+            FARMS_AGRIBUSINESS_STORAGE.with(|storage| {
+                let mut agribusinesses = storage.borrow_mut();
+                for (_, agribusiness) in agribusinesses.iter() {
+                    if agribusiness.principal_id == caller {
+                        let mut agribusiness = agribusiness.clone();
+                        agribusiness.email = Some(new_email.clone());
+                        agribusinesses.insert(agribusiness.id, agribusiness);
+                        return Ok(Success::FileUploaded {
+                            msg: "Email updated successfully!".to_string(),
+                        });
+                    }
+                }
+                Err(Error::NotAuthorized {
+                    msg: "Caller is not a registered farms agribusiness.".to_string(),
+                })
+            })
+        }
+        _ => Err(Error::NotAuthorized {
+            msg: "Caller is not a recognized entity type.".to_string(),
+        }),
+    }
 }
 
 #[query]
