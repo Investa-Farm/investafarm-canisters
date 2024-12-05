@@ -312,7 +312,8 @@ pub fn register_single_farm(new_farmer: NewFarmer, file_id: u64) -> Result<Succe
                         images: None,
                         farm_reports: None,
                         financial_reports: None,
-                        kyc_job_id: None
+                        kyc_job_id: None, 
+                        email: None
                     };
 
                     entitymanagement::FARMER_STORAGE

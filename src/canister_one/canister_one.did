@@ -52,6 +52,7 @@ type Farmer = record {
   farm_reports : opt vec FarmReport_1;
   amount_invested : opt nat64;
   funding_round_start_time : opt nat64;
+  email : opt text;
   time_for_funding_round_to_expire : opt Duration;
   ifarm_tokens : opt nat64;
   farmer_name : text;
@@ -79,6 +80,7 @@ type FarmsAgriBusiness = record {
   verified : bool;
   kyc_job_id : opt text;
   agribusiness_name : text;
+  email : opt text;
   principal_id : principal;
   total_farmers : nat64;
 };
@@ -136,6 +138,7 @@ type Investor = record {
   verified : bool;
   kyc_job_id : opt text;
   name : text;
+  email : opt text;
   principal_id : principal;
   saved_farms : opt vec nat64;
 };
@@ -234,6 +237,7 @@ type SupplyAgriBusiness = record {
   kyc_job_id : opt text;
   orders : vec Order;
   agribusiness_name : text;
+  email : opt text;
   items_to_be_supplied : opt vec Product;
   principal_id : principal;
 };
@@ -319,6 +323,7 @@ service : {
   store_investment : (nat64, float64, nat64, text) -> (Result_1);
   store_investments : (nat64, float64, nat64, text, text) -> (Result_1);
   store_transaction_fee : (text, float64) -> (Result_1);
+  update_email : (text) -> (Result);
   update_farmer_farm_details : (nat64, text, text) -> (Result_1);
   update_farms_agribusiness_name : (nat64, text) -> (Result_1);
   update_investor_name : (nat64, text) -> (Result_1);
