@@ -303,6 +303,7 @@ pub fn register_single_farm(new_farmer: NewFarmer, file_id: u64) -> Result<Succe
                         publish: true,
                         ifarm_tokens: None,
                         credit_score: None,
+                        max_loan_amount: None, 
                         current_loan_ask: None,
                         loaned: false,
                         loan_maturity: None,

@@ -61,6 +61,7 @@ type Farmer = record {
   publish : bool;
   principal_id : principal;
   farm_name : text;
+  max_loan_amount : opt nat64;
   loan_maturity : opt Duration;
   credit_score : opt nat64;
   investors_ids : principal;
@@ -250,7 +251,7 @@ type WithdrawalError = variant {
   InsufficientFunds : record { balance : nat };
 };
 service : {
-  add_credit_score : (nat64, nat64) -> (Result);
+  add_credit_score : (nat64, nat64, nat64) -> (Result);
   add_farm_images : (nat64, vec blob) -> (Result);
   add_farm_reports : (nat64, opt vec FarmReport) -> (Result);
   add_financial_reports : (nat64, opt vec FinancialReport) -> (Result);

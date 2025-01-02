@@ -21,17 +21,23 @@ pub fn ask_for_loan(
 
     // Find the farmer with the specified farm_id
     if let Some(farm) = farmers.iter_mut().find(|f| f.id == farm_id) {
-        // Check if the farm has a credit score
-        if let Some(credit_score) = farm.credit_score {
-            // Ensure the loan amount is not greater than the credit score
-            if loan_amount > credit_score {
+        // Check if the farm has a credit score and max loan amount
+        if let Some(_credit_score) = farm.credit_score {
+            if let Some(max_loan_amount) = farm.max_loan_amount {
+                // Ensure the loan amount is not greater than the max loan amount
+                if loan_amount > max_loan_amount {
+                    return Err(entitymanagement::Error::Error {
+                        msg: format!("Loan ask should not be greater than maximum loan amount!"),
+                    });
+                // Ensure the farm is not already processing another loan
+                } else if farm.loaned {
+                    return Err(entitymanagement::Error::Error {
+                        msg: format!("You cannot ask for a loan while processing another loan!"),
+                    });
+                }
+            } else {
                 return Err(entitymanagement::Error::Error {
-                    msg: format!("Loan ask should not be greater than credit score!"),
-                });
-            // Ensure the farm is not already processing another loan
-            } else if farm.loaned {
-                return Err(entitymanagement::Error::Error {
-                    msg: format!("You cannot ask for a loan while processing another loan!"),
+                    msg: format!("Maximum loan amount is not available!"),
                 });
             }
         } else {

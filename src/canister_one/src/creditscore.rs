@@ -115,7 +115,7 @@ async fn fetch_credit_score(mpesa_statement: Vec<u8>, passcode: String) -> Resul
 }
 
 #[update]
-async fn add_credit_score(farm_id: u64, credit_score: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
+async fn add_credit_score(farm_id: u64, credit_score: u64, max_loan_amount: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
     let farmers = entitymanagement::return_farmers();
     let caller = ic_cdk::caller();
 
@@ -131,8 +131,8 @@ async fn add_credit_score(farm_id: u64, credit_score: u64) -> Result<entitymanag
     let mut farmers = entitymanagement::return_farmers(); 
 
     // Transfer ifarm token to the caller
-    let amount = Nat::from(credit_score); 
-    let _ = ifarm_tokens::ifarm_transfer(caller, amount).await; 
+    // let amount = Nat::from(max_loan_amount); 
+    // let _ = ifarm_tokens::ifarm_transfer(caller, amount).await; 
 
     if let Some(farm) = farmers.iter_mut().find(|f| f.id == farm_id) {
         // Additional check: Ensure the caller owns this farm
@@ -143,6 +143,8 @@ async fn add_credit_score(farm_id: u64, credit_score: u64) -> Result<entitymanag
         }
 
         farm.credit_score = Some(credit_score); 
+        farm.ifarm_tokens = Some(max_loan_amount);
+        farm.max_loan_amount = Some(max_loan_amount);
 
         let farm_clone = farm.clone(); 
         entitymanagement::FARMER_STORAGE.with(|service| service.borrow_mut().insert(farm_id, farm_clone)); 
