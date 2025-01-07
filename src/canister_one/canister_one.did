@@ -134,6 +134,7 @@ type ICRC2TransferFromError = variant {
   TooOld;
   InsufficientFunds : record { balance : nat };
 };
+type Icrc28TrustedOriginsResponse = record { trusted_origins : vec text };
 type Investor = record {
   id : nat64;
   verified : bool;
@@ -242,6 +243,7 @@ type SupplyAgriBusiness = record {
   items_to_be_supplied : opt vec Product;
   principal_id : principal;
 };
+type SupportedStandard = record { url : text; name : text };
 type TokenCollateral = record { currency : text; amount : nat64 };
 type VerifiedTransactionDetails = record { from : text; amount : text };
 type WithdrawalError = variant {
@@ -304,6 +306,8 @@ service : {
   get_remaining_loan_maturity_time : (nat64) -> (Result_12) query;
   get_uploaded_files : () -> (Result_13);
   get_usdc_receipt : (text) -> (text);
+  icrc10_supported_standards : () -> (vec SupportedStandard) query;
+  icrc28_trusted_origins : () -> (Icrc28TrustedOriginsResponse);
   ifarm_approve : (principal, principal, nat) -> (Result_15);
   ifarm_balance : (principal) -> (nat);
   ifarm_transfer : (principal, nat) -> (Result_16);
