@@ -20,6 +20,9 @@ use candid::Nat;
 
 use b3_utils::ledger::{ ICRC1TransferResult, ICRC2ApproveResult, ICRC2TransferFromResult};
 
+use crate::icrc_standards::SupportedStandard;
+use crate::icrc_standards::Icrc28TrustedOriginsResponse;
+
 mod adminapproval;
 mod askforloan;
 mod creditscore;
@@ -36,6 +39,7 @@ mod ckusdc_payments;
 mod ifarm_tokens;
 // mod exchange_rate;
 mod approved_principals;
+mod icrc_standards;
 
 use ic_cdk::storage;
 
