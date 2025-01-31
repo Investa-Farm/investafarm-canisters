@@ -117,14 +117,16 @@ async fn fetch_credit_score(mpesa_statement: Vec<u8>, passcode: String) -> Resul
 #[update]
 async fn add_credit_score(farm_id: u64, credit_score: u64, max_loan_amount: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
     let farmers = entitymanagement::return_farmers();
+    let farms_agribusinesses = entitymanagement::return_farms_agribusiness(); 
     let caller = ic_cdk::caller();
 
-    // Check if the caller is a registered farmer
+    // Check if the caller is either a registered farmer or a farms agribusiness
     let is_registered_farmer = farmers.iter().any(|farmer| farmer.principal_id == caller);
+    let is_registered_agribusiness = farms_agribusinesses.iter().any(|agribiz| agribiz.principal_id == caller);
 
-    if !is_registered_farmer {
+    if !is_registered_farmer && !is_registered_agribusiness {
         return Err(entitymanagement::Error::Error { 
-            msg: String::from("Unauthorized: Caller is not a registered farmer") 
+            msg: String::from("Unauthorized: Caller is neither a registered farmer nor a farms agribusiness") 
         });
     }
 
@@ -135,12 +137,6 @@ async fn add_credit_score(farm_id: u64, credit_score: u64, max_loan_amount: u64)
     let _ = ifarm_tokens::ifarm_transfer(caller, amount).await; 
 
     if let Some(farm) = farmers.iter_mut().find(|f| f.id == farm_id) {
-        // Additional check: Ensure the caller owns this farm
-        if farm.principal_id != caller {
-            return Err(entitymanagement::Error::Error { 
-                msg: String::from("Unauthorized: Caller does not own this farm") 
-            });
-        }
 
         farm.credit_score = Some(credit_score); 
         farm.ifarm_tokens = Some(max_loan_amount);
