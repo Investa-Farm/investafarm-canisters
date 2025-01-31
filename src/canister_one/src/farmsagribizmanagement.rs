@@ -64,16 +64,17 @@ impl BoundedStorable for FileInfo {
 
 impl Storable for ImagesBoundedBytes {
     fn to_bytes(&self) -> std::borrow::Cow<[u8]> {
-        std::borrow::Cow::Owned(self.0.iter().flat_map(|v| v.clone()).collect())
+        Cow::Owned(Encode!(&self.0).unwrap())
     }
 
     fn from_bytes(bytes: std::borrow::Cow<[u8]>) -> Self {
-        ImagesBoundedBytes(vec![bytes.to_vec()])
+        let images: Vec<Vec<u8>> = Decode!(bytes.as_ref(), Vec<Vec<u8>>).unwrap();
+        ImagesBoundedBytes(images)
     }
 }
 
 impl BoundedStorable for ImagesBoundedBytes {
-    const MAX_SIZE: u32 = 512_000; 
+    const MAX_SIZE: u32 = 90_024_000;
     const IS_FIXED_SIZE: bool = false;
 }
 
@@ -429,42 +430,41 @@ pub fn change_verification_status(farm_id: u64, new_status: bool) -> Result<Succ
 fn add_farm_images(farm_id: u64, images: Vec<Vec<u8>>) -> Result<entitymanagement::Success, entitymanagement::Error> {
     let caller = ic_cdk::caller();
 
-    // First verify the farm exists and belongs to the caller
+    // Verify farm exists and belongs to either the farmer or agribusiness
     let farm = entitymanagement::FARMER_STORAGE
-        .with(|storage| storage.borrow().get(&farm_id).clone())
+        .with(|storage| storage.borrow().get(&farm_id))
         .ok_or_else(|| entitymanagement::Error::NotAuthorized {
             msg: format!("Farm with ID {} not found", farm_id),
-        })?;
+    })?;
 
-    if farm.principal_id != caller {
+    // Check ownership by comparing both farmer principal_id and agri_business with caller
+    if farm.principal_id != caller && farm.agri_business != caller.to_string() {
         return Err(entitymanagement::Error::NotAuthorized {
-            msg: "You are not authorized to modify this farm.".to_string(),
+            msg: "Only the farm owner or associated agribusiness can add images".to_string(),
         });
     }
 
-    // Merge existing images with new ones
+    // Store images for this specific farm
     FARM_IMAGES.with(|images_storage| {
         let mut storage = images_storage.borrow_mut();
-    
-        // Check if there are existing images for the farm_id
-        if let Some(existing_images) = storage.get(&farm_id) {
-            let mut new_images = existing_images.clone();
-            new_images.0.extend(images.clone()); // Merge new images
-            storage.insert(farm_id, new_images);
+        let farm_specific_images = if let Some(existing_images) = storage.get(&farm_id) {
+            let mut updated_images = existing_images.clone();
+            updated_images.0.extend(images.clone());
+            updated_images
         } else {
-            // No existing images, create a new entry
-            storage.insert(farm_id, ImagesBoundedBytes(images));
-        }
+            ImagesBoundedBytes(images)
+        };
+        storage.insert(farm_id, farm_specific_images)
     });
 
-    // Generate image references for all images
+    // Generate image references specific to this farm
     let image_refs: Vec<String> = FARM_IMAGES.with(|images_storage| {
         let storage = images_storage.borrow();
         let total_images = storage.get(&farm_id).map(|imgs| imgs.0.len()).unwrap_or(0);
-        (0..total_images).map(|index| format!("image_{}", index)).collect()
+        (0..total_images).map(|index| format!("farm_{}_image_{}", farm_id, index)).collect()
     });
 
-    // Update farm with all image references
+    // Update farm with its specific image references
     let mut updated_farm = farm;
     updated_farm.images = Some(image_refs);
     
@@ -475,7 +475,6 @@ fn add_farm_images(farm_id: u64, images: Vec<Vec<u8>>) -> Result<entitymanagemen
         msg: "Images added successfully".to_string(),
     })
 }
-
 
 #[update]
 fn add_financial_reports(
@@ -520,33 +519,34 @@ fn add_farm_reports(
 ) -> Result<entitymanagement::Success, entitymanagement::Error> {
     let caller = ic_cdk::caller();
 
-    let mut farms_for_agribusiness = get_farms_for_agribusiness();
+    // Verify farm exists and belongs to this agribusiness
+    let farm = entitymanagement::FARMER_STORAGE
+        .with(|storage| storage.borrow().get(&farm_id))
+        .ok_or_else(|| entitymanagement::Error::NotAuthorized {
+            msg: format!("Farm with ID {} not found", farm_id),
+        })?;
 
-    if let Some(farm) = farms_for_agribusiness
-        .iter_mut()
-        .find(|f| f.id == farm_id && f.principal_id == caller)
-    {
-        if let Some(reports) = farm_reports {
-            farm.farm_reports = Some(reports);
-        }
-
-        let farm_clone_1 = farm.clone();
-        let farm_clone_2 = farm.clone();
-
-        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
-            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_1));
-
-        entitymanagement::FARMER_STORAGE
-            .with(|service| service.borrow_mut().insert(farm_id, farm_clone_2));
-
-        Ok(entitymanagement::Success::PartialDataStored {
-            msg: "Farm reports added successfully.".to_string(),
-        })
-    } else {
-        Err(entitymanagement::Error::NotAuthorized {
-            msg: format!("Farm not found!"),
-        })
+    // Check ownership by comparing agri_business field with caller
+    if farm.agri_business != caller.to_string() {
+        return Err(entitymanagement::Error::NotAuthorized {
+            msg: "This farm does not belong to your agribusiness".to_string(),
+        });
     }
+
+    // Update farm with new reports
+    let mut updated_farm = farm.clone();
+    updated_farm.farm_reports = farm_reports;
+
+    // Update both storage locations with the farm-specific data
+    entitymanagement::FARMER_STORAGE
+        .with(|service| service.borrow_mut().insert(farm_id, updated_farm.clone()));
+
+    entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE
+        .with(|service| service.borrow_mut().insert(farm_id, updated_farm));
+
+    Ok(entitymanagement::Success::PartialDataStored {
+        msg: "Farm reports added successfully.".to_string(),
+    })
 }
 
 #[query]

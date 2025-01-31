@@ -53,7 +53,9 @@ pub fn is_allowed_principal() -> bool {
         Principal::from_text("grvsb-a7n2k-5ddft-lyfah-kl62t-ir2ih-4zvsc-ti5sf-qxboa-5f4zk-oae").unwrap(), 
         Principal::from_text("ipd2t-z274n-iv4hx-ravmg-7yq3w-ownym-5zwnb-cfuu4-ayo4s-k7tp5-jae").unwrap(), 
         Principal::from_text("3ut3n-6rt35-45boi-6vidq-fur7n-5jlvg-wggto-dqwcr-gwtuk-rst7y-zae").unwrap(),
-        Principal::from_text("7eeri-bkt2d-qcqc3-7w5cv-etdbs-mulun-napzl-alxdp-7dj4j-qbbfz-cqe").unwrap()
+        Principal::from_text("7eeri-bkt2d-qcqc3-7w5cv-etdbs-mulun-napzl-alxdp-7dj4j-qbbfz-cqe").unwrap(), 
+        Principal::from_text("jfsrf-v3jew-2j7c5-z2v5l-cpib7-7h66c-y2axw-ybf4m-qmljz-coz7i-6ae").unwrap(), 
+        Principal::from_text("gpjen-s3wpj-cuhjh-w3qhk-d662f-zuqhs-cp4bq-oz2hw-aqbu4-nzg6y-kqe").unwrap()
     ];
 
     let caller_principal = caller();
