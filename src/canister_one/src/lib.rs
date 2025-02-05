@@ -40,6 +40,7 @@ mod ifarm_tokens;
 // mod exchange_rate;
 mod approved_principals;
 mod icrc_standards;
+mod data_migration;
 
 use ic_cdk::storage;
 

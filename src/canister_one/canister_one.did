@@ -259,6 +259,11 @@ service : {
   add_financial_reports : (nat64, opt vec FinancialReport) -> (Result);
   add_tag : (nat64, text) -> (Result_1);
   ask_for_loan : (nat64, nat64, TokenCollateral) -> (Result);
+  backup_all_data : () -> (Result_1);
+  backup_farmers : () -> (Result_1);
+  backup_farms_agribusinesses : () -> (Result_1);
+  backup_investors : () -> (Result_1);
+  backup_supply_agribusinesses : () -> (Result_1);
   calculate_total_investments_by_investor : (nat64) -> (float64) query;
   calculate_total_investments_by_investor_on_farm : (nat64, nat64) -> (
       float64,
