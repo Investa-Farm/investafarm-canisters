@@ -1,4 +1,6 @@
-use crate::entitymanagement;
+use crate::farmerfiles::FarmerReportVec;
+use crate::{farmerfiles, farmsagribizmanagement::FARM_IMAGES};
+use crate::entitymanagement; 
 use candid::{CandidType, Principal};
 use ic_cdk::{update, caller, query};
 use serde::{Deserialize, Serialize};
@@ -12,6 +14,7 @@ pub enum Error {
     SupplyAgriBizNotFound { msg: String },
     FarmsAgriBizNotFound { msg: String },
     InvalidJobId { msg: String },
+    FarmNotFound { msg: String },
 }
 
 // Helper function to check if caller is an admin or registered entity
@@ -254,4 +257,133 @@ fn manual_verify_entity(entity_type: String, id: u64, verified: bool) -> Result<
             msg: String::from("Invalid entity type provided"),
         })
     }
+}
+
+// Functionality for removing farm images and farm reports
+#[update]
+pub fn admin_remove_farm_image(farm_id: u64, image_index: usize) -> Result<(), Error> {
+    // if !is_allowed_principal() {
+    //     return Err(Error::PermissionDenied { 
+    //         msg: String::from("Only admins can remove farm images") 
+    //     });
+    // }
+
+    // Get existing images first
+    let mut images = FARM_IMAGES.with(|images_storage| {
+        images_storage
+            .borrow()
+            .get(&farm_id)
+            .ok_or_else(|| Error::FarmNotFound {
+                msg: format!("No images found for farm {}", farm_id)
+            })
+    })?;
+
+    // Validate index before making any changes
+    if image_index >= images.0.len() {
+        return Err(Error::InvalidJobId { 
+            msg: format!("Image index {} out of bounds", image_index) 
+        });
+    }
+
+    // Remove the image
+    images.0.remove(image_index);
+    
+    // Update FARM_IMAGES storage
+    let farm_images_update = FARM_IMAGES.with(|images_storage| {
+        images_storage.borrow_mut().insert(farm_id, images.clone())
+    });
+
+    if farm_images_update.is_none() {
+        return Err(Error::FarmNotFound {
+            msg: format!("Failed to update farm images for farm {}", farm_id)
+        });
+    }
+
+    // Update farmer storage with error handling
+    let farmer_update_result = entitymanagement::FARMER_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        if let Some(mut farmer) = storage.get(&farm_id) {
+            if let Some(refs) = &mut farmer.images {
+                refs.remove(image_index);
+                storage.insert(farm_id, farmer);
+                true
+            } else {
+                false
+            }
+        } else {
+            false
+        }
+    });
+
+    if !farmer_update_result {
+        return Err(Error::FarmNotFound {
+            msg: format!("Failed to update farmer record for farm {}", farm_id)
+        });
+    }
+
+    Ok(())
+}
+
+#[update]
+pub fn admin_remove_farm_report(farm_id: u64, report_index: usize) -> Result<(), Error> {
+    
+    // Delete the specific file from FILE_STORAGE
+    let file_deleted = entitymanagement::FILE_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        storage
+            .iter()
+            .filter(|(k, _)| k.0.starts_with(&format!("report_{}", farm_id)))
+            .nth(report_index)
+            .map(|(k, _)| storage.remove(&k))
+            .is_some()
+    });
+
+    if !file_deleted {
+        return Err(Error::FarmNotFound {
+            msg: format!("Failed to delete file for farm report {}", report_index)
+        });
+    } 
+
+    farmerfiles::FARM_REPORTS.with(|reports| {
+        let mut reports = reports.borrow_mut();
+        if let Some(report_vec) = reports.get(&farm_id) {
+            let mut updated_vec = report_vec.0.clone();
+            if report_index < updated_vec.len() {
+                updated_vec.remove(report_index);
+                reports.insert(farm_id, FarmerReportVec(updated_vec));
+
+                // Update farmer storage
+                entitymanagement::FARMER_STORAGE.with(|storage| {
+                    let mut storage = storage.borrow_mut();
+                    if let Some(mut farmer) = storage.get(&farm_id) {
+                        if let Some(farmer_reports) = &mut farmer.farm_reports {
+                            farmer_reports.remove(report_index);
+                            storage.insert(farm_id, farmer);
+                        }
+                    }
+                });
+
+                // Update agribusiness storage
+                entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE.with(|agri_storage| {
+                    let mut agri_storage = agri_storage.borrow_mut();
+                    if let Some(mut agri_farmer) = agri_storage.get(&farm_id) {
+                        if let Some(agri_reports) = &mut agri_farmer.farm_reports {
+                            agri_reports.remove(report_index);
+                            agri_storage.insert(farm_id, agri_farmer);
+                        }
+                    }
+                });
+
+                Ok(())
+            } else {
+                Err(Error::InvalidJobId { 
+                    msg: format!("Report index {} out of bounds", report_index) 
+                })
+            }
+        } else {
+            Err(Error::FarmNotFound { 
+                msg: format!("Reports not found for farm {}", farm_id) 
+            })
+        }
+    })
 }

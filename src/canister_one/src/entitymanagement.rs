@@ -1760,7 +1760,7 @@ fn get_all_files() -> Result<Vec<(String, Vec<u8>)>, Error> {
 }
 
 #[query]
-fn get_files_by_type(farmer_id: u64, report_type: String) -> Result<Vec<(String, Vec<u8>)>, Error> {
+pub fn get_files_by_type(farmer_id: u64, report_type: String) -> Result<Vec<(String, Vec<u8>)>, Error> {
     FILE_STORAGE.with(|storage| {
         let storage = storage.borrow();
         Ok(storage
