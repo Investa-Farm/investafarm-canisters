@@ -777,6 +777,7 @@ pub enum Success {
     ReportDeletedSuccessfully { msg: String }, 
     FileUploaded { msg: String },
     FarmCreatedSuccessfully { msg: String },
+    FarmUpdateSuccesfull { msg: String }
 }
 
 // Error Messages
@@ -797,7 +798,8 @@ pub enum Error {
     ErrorOccured { msg: String },
     Error { msg: String },
     FileNotFound { msg: String },
-    UploadFailed { msg: String }
+    UploadFailed { msg: String }, 
+    FarmNotFound { msg: String }
 }
 
 impl fmt::Display for Error {
@@ -819,6 +821,7 @@ impl fmt::Display for Error {
             Error::Error { msg } => write!(f, "{}", msg),
             Error::FileNotFound { msg } => write!(f, "{}", msg),
             Error::UploadFailed { msg } => write!(f, "{}", msg),
+            Error::FarmNotFound { msg } => write!(f, "{}", msg),
         }
     }
 }

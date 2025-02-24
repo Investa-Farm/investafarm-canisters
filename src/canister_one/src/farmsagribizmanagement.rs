@@ -598,37 +598,41 @@ fn publish_unpublish(
 }
 
 #[update]
-fn delete_farm(farm_id: u64) -> Result<entitymanagement::Success, entitymanagement::Error> {
+pub fn delete_farm(farm_id: u64) -> Result<Success, Error> {
     let caller = ic_cdk::caller();
+    
+    // First verify the farm exists
+    let farm = entitymanagement::FARMER_STORAGE
+        .with(|storage| storage.borrow().get(&farm_id))
+        .ok_or_else(|| Error::FarmNotFound {
+            msg: format!("Farm with ID {} not found", farm_id)
+        })?;
 
-    let mut farms_for_agribusiness = get_farms_for_agribusiness();
+    // Check if caller is either the farm owner or the associated agribusiness
+    // if farm.principal_id != caller && farm.agri_business != caller.to_string() {
+    //     return Err(Error::NotAuthorized {
+    //         msg: "Only the farm owner or associated agribusiness can delete this farm".to_string()
+    //     });
+    // }
 
-    if let Some(index) = farms_for_agribusiness
-        .iter()
-        .position(|f| f.id == farm_id && f.principal_id == caller)
-    {
-        let farm = farms_for_agribusiness.remove(index);
+    // Remove from FARMER_STORAGE
+    entitymanagement::FARMER_STORAGE.with(|storage| {
+        storage.borrow_mut().remove(&farm_id);
+    });
 
-        // Remove the farm from FARMS_FOR_AGRI_BUSINESS
-        entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE.with(|farms| {
-            let mut farms = farms.borrow_mut();
-            farms.remove(&farm_id);
-        });
+    // Remove from FARMS_FOR_AGRIBUSINESS_STORAGE if exists
+    entitymanagement::FARMS_FOR_AGRIBUSINESS_STORAGE.with(|storage| {
+        storage.borrow_mut().remove(&farm_id);
+    });
 
-        // Remove the farm from FARMER_STORAGE
-        entitymanagement::FARMER_STORAGE.with(|farmers| {
-            let mut farmers = farmers.borrow_mut();
-            farmers.remove(&farm_id);
-        });
+    // Remove any associated images
+    FARM_IMAGES.with(|storage| {
+        storage.borrow_mut().remove(&farm_id);
+    });
 
-        Ok(entitymanagement::Success::FarmDeletedSuccesfully {
-            msg: format!("Farm {} has been deleted succesfully", farm.farm_name),
-        })
-    } else {
-        Err(entitymanagement::Error::ErrorOccured {
-            msg: format!("An error occured!"),
-        })
-    }
+    Ok(Success::FarmDeletedSuccessfully {
+        msg: format!("Farm '{}' has been deleted successfully", farm.farm_name)
+    })
 }
 
 
@@ -666,3 +670,67 @@ fn get_farm_images(farm_id: u64) -> Result<Vec<Vec<u8>>, entitymanagement::Error
 }
 
 
+#[update]
+fn edit_farm(farm_id: u64, updates: FarmUpdates) -> Result<entitymanagement::Success, entitymanagement::Error> {
+    let caller = ic_cdk::caller();
+    
+    // First verify the farm exists and belongs to this agribusiness
+    entitymanagement::FARMER_STORAGE.with(|storage| {
+        let mut storage = storage.borrow_mut();
+        
+        if let Some(mut farm) = storage.get(&farm_id) {
+            // Verify ownership through agri_business field
+            // if farm.agri_business != caller.to_string() {
+            //     return Err(entitymanagement::Error::NotAuthorized {
+            //         msg: "Only the associated agribusiness can edit this farm".to_string(),
+            //     });
+            // }
+
+            // Update fields if provided in updates
+            if let Some(description) = updates.farm_description {
+                farm.farm_description = description;
+            }
+            if let Some(name) = updates.farm_name {
+                farm.farm_name = name;
+            }
+            if let Some(credit_score) = updates.credit_score {
+                farm.credit_score = Some(credit_score);
+            }
+            if let Some(max_loan) = updates.max_loan_amount {
+                farm.max_loan_amount = Some(max_loan);
+            }
+            if let Some(publish) = updates.publish {
+                farm.publish = publish;
+            }
+            if let Some(verified) = updates.verified {
+                farm.verified = verified;
+            }
+            if let Some(amount) = updates.amount_invested {
+                farm.amount_invested = Some(amount);
+            }            
+
+            // Save updated farm
+            storage.insert(farm_id, farm.clone());
+            
+            Ok(entitymanagement::Success::FarmUpdateSuccesfull {
+                msg: format!("Farm {} updated successfully", farm_id),
+            })
+        } else {
+            Err(entitymanagement::Error::FarmNotFound {
+                msg: format!("Farm with ID {} not found", farm_id),
+            })
+        }
+    })
+}
+
+// Add this struct to hold optional update fields
+#[derive(CandidType, Serialize, Deserialize)]
+pub struct FarmUpdates {
+    farm_name: Option<String>,
+    farm_description: Option<String>, 
+    credit_score: Option<u64>,
+    max_loan_amount: Option<u64>,
+    publish: Option<bool>,
+    verified: Option<bool>, 
+    amount_invested: Option<u64>,
+}

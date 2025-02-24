@@ -13,6 +13,7 @@ use crate::ck_eth::minter;
 use crate::entitymanagement::FinancialReport;
 use crate::entitymanagement::FarmReport;
 use crate::entitymanagement::NewFarmer; 
+use crate::farmsagribizmanagement::FarmUpdates; 
 // use crate::askforloan;
 use ic_cdk::{query, update};
 use candid::Principal;
