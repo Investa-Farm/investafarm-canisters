@@ -25,6 +25,7 @@ type Error = variant {
   NotAuthorized : record { msg : text };
   MismatchId : record { msg : text };
   FileNotFound : record { msg : text };
+  FarmNotFound : record { msg : text };
   TagAlreadyExists : record { msg : text };
   InvestorNotFound : record { msg : text };
   UploadFailed : record { msg : text };
@@ -37,6 +38,15 @@ type FarmSection = record {
   title : text;
   content : opt text;
   items : opt vec text;
+};
+type FarmUpdates = record {
+  verified : opt bool;
+  amount_invested : opt nat64;
+  publish : opt bool;
+  farm_name : opt text;
+  max_loan_amount : opt nat64;
+  credit_score : opt nat64;
+  farm_description : opt text;
 };
 type Farmer = record {
   id : nat64;
@@ -210,6 +220,7 @@ type Shipping = variant { Express };
 type Success = variant {
   FarmerUpdateSuccesfull : record { msg : text };
   InvestorUpdateSuccesfull : record { msg : text };
+  FarmUpdateSuccesfull : record { msg : text };
   FarmsAgriBusinessLogInSuccesfull : record { msg : text };
   CreditScoreAdded : record { msg : text };
   SupplyAgriBusinessLogInSuccesfull : record { msg : text };
@@ -288,6 +299,7 @@ service : {
   display_specific_farm_agribusiness : (principal) -> (Result_7) query;
   display_specific_investor : (principal) -> (Result_8) query;
   display_supply_agribusinesses : () -> (vec SupplyAgriBusiness) query;
+  edit_farm : (nat64, FarmUpdates) -> (Result);
   fetch_credit_score : (blob, text) -> (Result_9);
   get_all_files : () -> (Result_10) query;
   get_all_transaction_fees : () -> (vec record { text; float64 }) query;
