@@ -680,11 +680,11 @@ fn edit_farm(farm_id: u64, updates: FarmUpdates) -> Result<entitymanagement::Suc
         
         if let Some(mut farm) = storage.get(&farm_id) {
             // Verify ownership through agri_business field
-            // if farm.agri_business != caller.to_string() {
-            //     return Err(entitymanagement::Error::NotAuthorized {
-            //         msg: "Only the associated agribusiness can edit this farm".to_string(),
-            //     });
-            // }
+            if farm.agri_business != caller.to_string() {
+                return Err(entitymanagement::Error::NotAuthorized {
+                    msg: "Only the associated agribusiness can edit this farm".to_string(),
+                });
+            }
 
             // Update fields if provided in updates
             if let Some(description) = updates.farm_description {
@@ -707,7 +707,10 @@ fn edit_farm(farm_id: u64, updates: FarmUpdates) -> Result<entitymanagement::Suc
             }
             if let Some(amount) = updates.amount_invested {
                 farm.amount_invested = Some(amount);
-            }            
+            } 
+            if let Some(loan_ask) = updates.current_loan_ask {
+                farm.current_loan_ask = Some(loan_ask);
+            }           
 
             // Save updated farm
             storage.insert(farm_id, farm.clone());
@@ -733,4 +736,5 @@ pub struct FarmUpdates {
     publish: Option<bool>,
     verified: Option<bool>, 
     amount_invested: Option<u64>,
+    current_loan_ask: Option<u64>, 
 }

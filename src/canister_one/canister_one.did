@@ -41,6 +41,7 @@ type FarmSection = record {
 };
 type FarmUpdates = record {
   verified : opt bool;
+  current_loan_ask : opt nat64;
   amount_invested : opt nat64;
   publish : opt bool;
   farm_name : opt text;
