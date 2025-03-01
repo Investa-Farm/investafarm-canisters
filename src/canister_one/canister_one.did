@@ -261,6 +261,11 @@ service : {
   admin_remove_farm_image : (nat64, nat64) -> (Result_2);
   admin_remove_farm_report : (nat64) -> (Result_2);
   ask_for_loan : (nat64, nat64, TokenCollateral) -> (Result);
+  backup_all_data : () -> (Result_1);
+  backup_farmers : () -> (Result_1);
+  backup_farms_agribusinesses : () -> (Result_1);
+  backup_investors : () -> (Result_1);
+  backup_supply_agribusinesses : () -> (Result_1);
   calculate_total_investments_by_investor : (nat64) -> (float64) query;
   calculate_total_investments_by_investor_on_farm : (nat64, nat64) -> (
       float64,
